@@ -3153,7 +3153,7 @@ int commander_thread_main(int argc, char *argv[])
 			set_tune(TONE_BATTERY_WARNING_SLOW_TUNE);
 
 		} else if (status.failsafe) {
-			tune_failsafe(true);
+			set_tune(TONE_YEE);
 		} else {
 			set_tune(TONE_STOP_TUNE);
 		}
