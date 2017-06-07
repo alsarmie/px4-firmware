@@ -542,6 +542,16 @@ void BlockLocalPositionEstimator::update()
 
 void BlockLocalPositionEstimator::checkTimeouts()
 {
+	// Let EST_XY be set iff one of the sensors isn't timed out.
+	_estimatorInitialized &= ~EST_XY;
+	if (!(_sensorTimeout & SENSOR_GPS)
+		|| !(_sensorTimeout & SENSOR_FLOW)
+		|| !(_sensorTimeout & SENSOR_VISION)
+		|| !(_sensorTimeout & SENSOR_MOCAP)
+		|| !(_sensorTimeout & SENSOR_LAND)
+	   ) {
+		_estimatorInitialized |= EST_XY;
+	}
 	baroCheckTimeout();
 	gpsCheckTimeout();
 	lidarCheckTimeout();
