@@ -441,7 +441,7 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 	case commander_state_s::MAIN_STATE_OFFBOARD:
 
 		/* need offboard signal */
-		if (!status_flags->offboard_control_signal_lost) {
+		if (!status_flags->offboard_control_signal_lost && status_flags->condition_local_position_valid) {
 
 			ret = TRANSITION_CHANGED;
 		}
@@ -804,8 +804,12 @@ bool set_nav_state(struct vehicle_status_s *status,
 
 	case commander_state_s::MAIN_STATE_OFFBOARD:
 
-		/* require offboard control, otherwise stay where you are */
-		if (status_flags->offboard_control_signal_lost && !status->rc_signal_lost) {
+		/* require offboard control and local positioning, otherwise stay where you are */
+		if (!status_flags->condition_local_position_valid) {
+			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_local_position);
+			status->nav_state = vehicle_status_s::NAVIGATION_STATE_DESCEND;
+
+		} else if (status_flags->offboard_control_signal_lost && !status->rc_signal_lost) {
 			enable_failsafe(status, old_failsafe, mavlink_log_pub, reason_no_offboard);
 
 			if (status_flags->offboard_control_loss_timeout && offb_loss_rc_act < 6 && offb_loss_rc_act >= 0) {
