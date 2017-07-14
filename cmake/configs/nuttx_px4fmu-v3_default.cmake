@@ -32,10 +32,11 @@ set(config_module_list
 	drivers/ll40ls
 	drivers/lsm303d
 	drivers/mb12xx
-	drivers/meas_airspeed
 	drivers/mkblctrl
 	drivers/mpu6000
 	drivers/mpu9250
+	drivers/ms4525_airspeed
+	drivers/ms5525_airspeed
 	drivers/ms5611
 	drivers/oreoled
 	drivers/pwm_input
@@ -44,6 +45,7 @@ set(config_module_list
 	drivers/px4fmu
 	drivers/px4io
 	drivers/rgbled
+	drivers/sdp3x_airspeed
 	drivers/sf0x
 	drivers/sf1xx
 	drivers/snapdragon_rc_pwm
@@ -134,7 +136,7 @@ set(config_module_list
 	# Library modules
 	#
 	modules/dataman
-	modules/param
+	modules/systemlib/param
 	modules/systemlib
 	modules/systemlib/mixer
 	modules/uORB

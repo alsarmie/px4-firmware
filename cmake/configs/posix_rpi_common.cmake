@@ -8,6 +8,7 @@ include(posix/px4_impl_posix)
 add_definitions(
 	-D__PX4_POSIX_RPI
 	-D__DF_LINUX # For DriverFramework
+	-D__DF_RPI # For DriverFramework
 )
 
 
@@ -61,7 +62,7 @@ set(config_module_list
 	modules/sdlog2
 	modules/logger
 	modules/commander
-	modules/param
+	modules/systemlib/param
 	modules/systemlib
 	modules/systemlib/mixer
 	modules/uORB
@@ -76,10 +77,11 @@ set(config_module_list
 	drivers/gps
 	drivers/navio_adc
 	drivers/navio_sysfs_rc_in
-	drivers/navio_sysfs_pwm_out
 	drivers/linux_gpio
+	drivers/linux_pwm_out
 	drivers/navio_rgbled
 	drivers/pwm_out_sim
+	drivers/rpi_rc_in
 
 	#
 	# Libraries

@@ -241,16 +241,19 @@ check_%:
 
 # Documentation
 # --------------------------------------------------------------------
-.PHONY: parameters_metadata airframe_metadata px4_metadata
+.PHONY: parameters_metadata airframe_metadata px4_metadata module_documentation
 
 parameters_metadata: posix_sitl_default
 	@python $(SRC_DIR)/Tools/px_process_params.py -s $(SRC_DIR)/src --markdown
 
 airframe_metadata:
-	@python ${SRC_DIR}/Tools/px_process_airframes.py -v -a ${SRC_DIR}/ROMFS/px4fmu_common/init.d --markdown
-	@python ${SRC_DIR}/Tools/px_process_airframes.py -v -a ${SRC_DIR}/ROMFS/px4fmu_common/init.d --xml
+	@python $(SRC_DIR)/Tools/px_process_airframes.py -v -a $(SRC_DIR)/ROMFS/px4fmu_common/init.d --markdown
+	@python $(SRC_DIR)/Tools/px_process_airframes.py -v -a $(SRC_DIR)/ROMFS/px4fmu_common/init.d --xml
 
-px4_metadata: parameters_metadata airframe_metadata
+module_documentation:
+	@python $(SRC_DIR)/Tools/px_process_module_doc.py -v --markdown $(SRC_DIR)/modules --src-path $(SRC_DIR)/src
+
+px4_metadata: parameters_metadata airframe_metadata module_documentation
 
 # S3 upload helpers
 # --------------------------------------------------------------------
@@ -305,27 +308,22 @@ format:
 
 # Testing
 # --------------------------------------------------------------------
-.PHONY: unittest run_tests_posix tests tests_coverage
-
-unittest: posix_sitl_default
-	$(call cmake-build,unittest,$(SRC_DIR)/unittests)
-	@(cd build_unittest && ctest -j2 --output-on-failure)
+.PHONY: run_tests_posix tests tests_coverage
 
 run_tests_posix:
 	$(MAKE) --no-print-directory posix_sitl_default test_results
 
-tests: unittest run_tests_posix
+tests: run_tests_posix
 
 tests_coverage:
 	@$(MAKE) --no-print-directory posix_sitl_default test_coverage_genhtml PX4_CMAKE_BUILD_TYPE=Coverage
 
 coveralls_upload:
 	@cpp-coveralls --include src/ \
-		--exclude src/lib/DriverFramework \
-		--exclude src/lib/ecl \
-		--exclude src/lib/Matrix \
+		--exclude=src/lib/DriverFramework \
+		--exclude=src/lib/ecl \
+		--exclude=src/lib/Matrix \
 		--exclude=src/modules/uavcan/libuavcan \
-		--exclude-pattern ".*/unittests/googletest/.*" \
 		--root . --build-root build_posix_sitl_default/ --follow-symlinks
 
 codecov_upload:

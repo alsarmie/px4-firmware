@@ -24,7 +24,8 @@ set(config_module_list
 	drivers/hmc5883
 	drivers/gps
 	drivers/airspeed
-	drivers/meas_airspeed
+	drivers/ms4525_airspeed
+	drivers/ms5525_airspeed
 	modules/sensors
 	drivers/vmount
 
@@ -79,7 +80,7 @@ set(config_module_list
 	#
 	# Library modules
 	#
-	modules/param
+	modules/systemlib/param
 	modules/systemlib
 	modules/systemlib/mixer
 	modules/uORB

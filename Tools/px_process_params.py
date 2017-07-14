@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 ############################################################################
 #
-#   Copyright (C) 2013-2014 PX4 Development Team. All rights reserved.
+#   Copyright (C) 2013-2017 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -41,6 +41,7 @@
 # Currently supported formats are:
 #   * XML for the parametric UI generator
 #   * Human-readable description in DokuWiki page format
+#   * Human-readable description in Markdown page format for the PX4 dev guide
 #
 # This tool also allows to automatically upload the human-readable version
 # to the DokuWiki installation via XML-RPC.
@@ -77,10 +78,10 @@ def main():
                         help="Inject additional param XML file"
                              " (default FILENAME: ../Tools/parameters_injected.xml)")
     parser.add_argument("-b", "--board",
-                         nargs='?',
-                         const="",
-                         metavar="BOARD",
-                         help="Board to create xml parameter xml for")
+                        nargs='?',
+                        const="",
+                        metavar="BOARD",
+                        help="Board to create xml parameter xml for")
     parser.add_argument("-m", "--markdown",
                         nargs='?',
                         const="parameters.md",
@@ -118,12 +119,13 @@ def main():
                         metavar="SUMMARY",
                         default="Automagically updated parameter documentation from code.",
                         help="DokuWiki page edit summary")
-    parser.add_argument('-v', '--verbose', action='store_true', help="verbose output")
+    parser.add_argument('-v', '--verbose',
+                        action='store_true',
+                        help="verbose output")
     parser.add_argument("-o", "--overrides",
                         default="{}",
                         metavar="OVERRIDES",
                         help="a dict of overrides in the form of a json string")
-
 
     args = parser.parse_args()
 
@@ -138,8 +140,9 @@ def main():
     parser = srcparser.SourceParser()
 
     # Scan directories, and parse the files
-    if (args.verbose): print("Scanning source path " + str(args.src_path))
-    
+    if (args.verbose):
+        print("Scanning source path " + str(args.src_path))
+
     if not scanner.ScanDir(args.src_path, parser):
         sys.exit(1)
 
@@ -162,7 +165,8 @@ def main():
 
     # Output to XML file
     if args.xml:
-        if args.verbose: print("Creating XML file " + args.xml)
+        if args.verbose:
+            print("Creating XML file " + args.xml)
         cur_dir = os.path.dirname(os.path.realpath(__file__))
         out = xmlout.XMLOutput(param_groups, args.board,
                                os.path.join(cur_dir, args.inject_xml))

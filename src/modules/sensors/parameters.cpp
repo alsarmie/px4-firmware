@@ -166,9 +166,11 @@ int initialize_parameter_handles(ParameterHandles &parameter_handles)
 	(void)param_find("CAL_MAG0_ID");
 	(void)param_find("CAL_MAG1_ID");
 	(void)param_find("CAL_MAG2_ID");
+	(void)param_find("CAL_MAG3_ID");
 	(void)param_find("CAL_MAG0_ROT");
 	(void)param_find("CAL_MAG1_ROT");
 	(void)param_find("CAL_MAG2_ROT");
+	(void)param_find("CAL_MAG3_ROT");
 	(void)param_find("CAL_MAG_SIDES");
 
 	(void)param_find("CAL_MAG1_XOFF");
@@ -184,6 +186,13 @@ int initialize_parameter_handles(ParameterHandles &parameter_handles)
 	(void)param_find("CAL_MAG2_YSCALE");
 	(void)param_find("CAL_MAG2_ZOFF");
 	(void)param_find("CAL_MAG2_ZSCALE");
+
+	(void)param_find("CAL_MAG3_XOFF");
+	(void)param_find("CAL_MAG3_XSCALE");
+	(void)param_find("CAL_MAG3_YOFF");
+	(void)param_find("CAL_MAG3_YSCALE");
+	(void)param_find("CAL_MAG3_ZOFF");
+	(void)param_find("CAL_MAG3_ZSCALE");
 
 	(void)param_find("CAL_GYRO1_XOFF");
 	(void)param_find("CAL_GYRO1_XSCALE");
@@ -346,11 +355,11 @@ int update_parameters(const ParameterHandles &parameter_handles, Parameters &par
 	}
 
 	if (param_get(parameter_handles.rc_map_stab_sw, &(parameters.rc_map_stab_sw)) != OK) {
-		warnx("%s", paramerr);
+		PX4_WARN("%s", paramerr);
 	}
 
 	if (param_get(parameter_handles.rc_map_man_sw, &(parameters.rc_map_man_sw)) != OK) {
-		warnx("%s", paramerr);
+		PX4_WARN("%s", paramerr);
 	}
 
 	param_get(parameter_handles.rc_map_aux1, &(parameters.rc_map_aux1));

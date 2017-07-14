@@ -821,6 +821,7 @@ PX4IO::init()
 		cmd.param5 = 0;
 		cmd.param6 = 0;
 		cmd.param7 = 0;
+		cmd.timestamp = hrt_absolute_time();
 		cmd.command = vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM;
 
 		/* ask to confirm command */
@@ -922,7 +923,7 @@ PX4IO::init()
 	_task = px4_task_spawn_cmd("px4io",
 				   SCHED_DEFAULT,
 				   SCHED_PRIORITY_ACTUATOR_OUTPUTS,
-				   1400,
+				   1500,
 				   (main_t)&PX4IO::task_main_trampoline,
 				   nullptr);
 

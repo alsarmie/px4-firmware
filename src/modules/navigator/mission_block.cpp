@@ -363,31 +363,32 @@ MissionBlock::is_mission_item_reached()
 		if ((get_time_inside(_mission_item) < FLT_EPSILON) ||
 		    (now - _time_first_inside_orbit >= (hrt_abstime)(get_time_inside(_mission_item) * 1e6f))) {
 
+			position_setpoint_s &curr_sp = _navigator->get_position_setpoint_triplet()->current;
+			const position_setpoint_s &next_sp = _navigator->get_position_setpoint_triplet()->next;
+
+			const float range = get_distance_to_next_waypoint(curr_sp.lat, curr_sp.lon, next_sp.lat, next_sp.lon);
+
 			// exit xtrack location
-			if (_mission_item.loiter_exit_xtrack &&
+			// reset lat/lon of loiter waypoint so vehicle follows a tangent
+			if (_mission_item.loiter_exit_xtrack && next_sp.valid && PX4_ISFINITE(range) &&
 			    (_mission_item.nav_cmd == NAV_CMD_LOITER_TIME_LIMIT ||
 			     _mission_item.nav_cmd == NAV_CMD_LOITER_TO_ALT)) {
 
-				// reset lat/lon of loiter waypoint so vehicle follows a tangent
-				struct position_setpoint_s *curr_sp = &_navigator->get_position_setpoint_triplet()->current;
-				const struct position_setpoint_s *next_sp = &_navigator->get_position_setpoint_triplet()->next;
-				float range = get_distance_to_next_waypoint(curr_sp->lat, curr_sp->lon, next_sp->lat, next_sp->lon);
-				float bearing = get_bearing_to_next_waypoint(curr_sp->lat, curr_sp->lon, next_sp->lat, next_sp->lon);
+				float bearing = get_bearing_to_next_waypoint(curr_sp.lat, curr_sp.lon, next_sp.lat, next_sp.lon);
 				float inner_angle = M_PI_2_F - asinf(_mission_item.loiter_radius / range);
 
 				// Compute "ideal" tangent origin
-				if (curr_sp->loiter_direction > 0) {
+				if (curr_sp.loiter_direction > 0) {
 					bearing -= inner_angle;
 
 				} else {
 					bearing += inner_angle;
 				}
 
-
 				// Replace current setpoint lat/lon with tangent coordinate
-				waypoint_from_heading_and_distance(curr_sp->lat, curr_sp->lon,
-								   bearing, curr_sp->loiter_radius,
-								   &curr_sp->lat, &curr_sp->lon);
+				waypoint_from_heading_and_distance(curr_sp.lat, curr_sp.lon,
+								   bearing, curr_sp.loiter_radius,
+								   &curr_sp.lat, &curr_sp.lon);
 			}
 
 			return true;
@@ -478,7 +479,9 @@ MissionBlock::issue_command(const struct mission_item_s *item)
 		PX4_INFO("forwarding command %d", item->nav_cmd);
 		struct vehicle_command_s cmd = {};
 		mission_item_to_vehicle_command(item, &cmd);
-		_action_start = hrt_absolute_time();
+		const hrt_abstime now = hrt_absolute_time();
+		_action_start = now;
+		cmd.timestamp = now;
 
 		_navigator->publish_vehicle_cmd(cmd);
 	}
@@ -519,6 +522,7 @@ MissionBlock::mission_item_to_position_setpoint(const struct mission_item_s *ite
 	sp->lon = item->lon;
 	sp->alt = item->altitude_is_relative ? item->altitude + _navigator->get_home_position()->alt : item->altitude;
 	sp->yaw = item->yaw;
+	sp->yaw_valid = PX4_ISFINITE(item->yaw);
 	sp->loiter_radius = (fabsf(item->loiter_radius) > NAV_EPSILON_POSITION) ? fabsf(item->loiter_radius) :
 			    _navigator->get_loiter_radius();
 	sp->loiter_direction = (item->loiter_radius > 0) ? 1 : -1;
@@ -570,9 +574,15 @@ MissionBlock::mission_item_to_position_setpoint(const struct mission_item_s *ite
 		break;
 
 	case NAV_CMD_LOITER_TO_ALT:
+
 		// initially use current altitude, and switch to mission item altitude once in loiter position
-		sp->alt = math::max(_navigator->get_global_position()->alt,
-				    _navigator->get_home_position()->alt + _param_loiter_min_alt.get());
+		if (_param_loiter_min_alt.get() > 0.0f) { // ignore _param_loiter_min_alt if smaller then 0 (-1)
+			sp->alt = math::max(_navigator->get_global_position()->alt,
+					    _navigator->get_home_position()->alt + _param_loiter_min_alt.get());
+
+		} else {
+			sp->alt = _navigator->get_global_position()->alt;
+		}
 
 	// fall through
 	case NAV_CMD_LOITER_TIME_LIMIT:
@@ -707,6 +717,7 @@ MissionBlock::set_land_item(struct mission_item_s *item, bool at_current_locatio
 		struct vehicle_command_s cmd = {};
 		cmd.command = NAV_CMD_DO_VTOL_TRANSITION;
 		cmd.param1 = vtol_vehicle_status_s::VEHICLE_VTOL_STATE_MC;
+		cmd.timestamp = hrt_absolute_time();
 
 		_navigator->publish_vehicle_cmd(cmd);
 	}

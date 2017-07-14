@@ -20,7 +20,7 @@ uint16 GPS_CHECK_FAIL_MAX_VERT_DRIFT = 6		# 6 : maximum allowed vertical positio
 uint16 GPS_CHECK_FAIL_MAX_HORZ_SPD_ERR = 7		# 7 : maximum allowed horizontal velocity discrepancy fail
 uint16 GPS_CHECK_FAIL_MAX_VERT_SPD_ERR = 8		# 8 : maximum allowed vertical velocity discrepancy fail
 
-uint16 control_mode_flags	# Bitmask to indicate EKF logic state
+uint32 control_mode_flags	# Bitmask to indicate EKF logic state
 # 0 - true if the filter tilt alignment is complete
 # 1 - true if the filter yaw alignment is complete
 # 2 - true if GPS measurements are being fused
@@ -63,9 +63,10 @@ uint16 innovation_check_flags # Bitmask to indicate pass/fail status of innovati
 # 5 - true if the Z magnetometer observation has been rejected
 # 6 - true if the yaw observation has been rejected
 # 7 - true if the airspeed observation has been rejected
-# 8 - true if the height above ground observation has been rejected
-# 9 - true if the X optical flow observation has been rejected
-# 10 - true if the Y optical flow observation has been rejected
+# 8 - true if the synthetic sideslip observation has been rejected
+# 9 - true if the height above ground observation has been rejected
+# 10 - true if the X optical flow observation has been rejected
+# 11 - true if the Y optical flow observation has been rejected
 float32 mag_test_ratio # ratio of the largest magnetometer innovation component to the innovation test limit
 float32 vel_test_ratio # ratio of the largest velocity innovation component to the innovation test limit
 float32 pos_test_ratio # ratio of the largest horizontal position innovation component to the innovation test limit

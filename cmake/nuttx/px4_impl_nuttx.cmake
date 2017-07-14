@@ -81,17 +81,19 @@ function(px4_nuttx_add_firmware)
 		ARGN ${ARGN})
 
 	set(extra_args)
-
+	set(dependencies)
 	if (PARAM_XML)
 		list(APPEND extra_args
 			--parameter_xml ${PARAM_XML}
 			)
+		list(APPEND dependencies parameters_xml)
 	endif()
 
 	if (AIRFRAMES_XML)
 		list(APPEND extra_args
 			--airframe_xml ${AIRFRAMES_XML}
 			)
+		list(APPEND dependencies airframes_xml)
 	endif()
 
 	add_custom_command(OUTPUT ${OUT} ${EXE}.bin
@@ -101,7 +103,7 @@ function(px4_nuttx_add_firmware)
 			--git_identity ${PX4_SOURCE_DIR}
 			${extra_args}
 			--image ${EXE}.bin > ${OUT}
-		DEPENDS ${EXE}
+		DEPENDS ${EXE} ${dependencies}
 		)
 	add_custom_target(build_firmware_${BOARD} ALL DEPENDS ${OUT})
 endfunction()
@@ -576,6 +578,8 @@ function(px4_os_add_flags)
 		-nodefaultlibs
 		-nostdlib
 		)
+
+	set(added_optimization_flags)
 
 	set(added_exe_linker_flags) # none currently
 

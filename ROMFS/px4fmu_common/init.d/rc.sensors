@@ -8,7 +8,6 @@ then
 	if ms5611 start
 	then
 	fi
-
 else
 	if ver hwcmp AEROFC_V1
 	then
@@ -63,18 +62,8 @@ fi
 
 if ver hwcmp AUAV_X21
 then
-	# I2C bus
-	if hmc5883 -C -T start
-	then
-	fi
-
-	# I2C bus
-	if lis3mdl start
-	then
-	fi
-
-	# Internal SPI bus ICM-20602-G is rotated 90 deg yaw
-	if mpu6000 -R 2 -T 20602 start
+	# External I2C bus
+	if hmc5883 -C -T -X start
 	then
 	fi
 
@@ -152,11 +141,6 @@ then
 		if hmc5883 -C -T -S -R 8 start
 		then
 		fi
-
-		if meas_airspeed start -b 2
-		then
-		fi
-
 	else
 		# FMUv2
 		if mpu6000 start
@@ -287,6 +271,10 @@ then
 	then
 	fi
 
+	if mpu6000 -s -R 8 start
+	then
+	fi
+
 	if mpu9250 -s -R 8 start
 	then
 	fi
@@ -343,16 +331,15 @@ fi
 
 if ver hwcmp PX4FMU_V4PRO
 then
-
 	# Internal SPI bus ICM-20608-G
 	if mpu6000 -R 2 -T 20608 start
 	then
 	fi
-	
+
 	# Internal SPI bus ICM-20602
 	if mpu6000 -R 2 -T 20602 start
 	then
-	fi	
+	fi
 
 	# Internal SPI bus mpu9250
 	if mpu9250 -R 2 start
@@ -368,7 +355,6 @@ then
 	if hmc5883 -C -T -X start
 	then
 	fi
-
 fi
 
 if ver hwcmp PX4FMU_V5
@@ -398,12 +384,6 @@ then
 	if hmc5883 -C -T -X start
 	then
 	fi
-
-	# Possible external airspeed sensor
-	if meas_airspeed start -b 2
-	then
-	fi
-
 fi
 
 if ver hwcmp AEROCORE2
@@ -412,15 +392,88 @@ then
 	lsm303d start
 fi
 
-if meas_airspeed start
+#
+# Optional drivers
+#
+
+if sdp3x_airspeed start
 then
-else
-	if ets_airspeed start
+fi
+
+if ms5525_airspeed start
+then
+fi
+
+if ms5525_airspeed start -b 2
+then
+fi
+
+if ms4525_airspeed start
+then
+fi
+
+if ms4525_airspeed start -b 2
+then
+fi
+
+if ets_airspeed start
+then
+fi
+
+if ets_airspeed start -b 1
+then
+fi
+
+# Sensors on the PWM interface bank
+if param compare SENS_EN_LL40LS 1
+then
+	if pwm_input start
 	then
-	else
-		if ets_airspeed start -b 1
+		if ll40ls start pwm
 		then
 		fi
+	fi
+fi
+
+# Lidar-Lite on I2C
+if param compare SENS_EN_LL40LS 2
+then
+	if ll40ls start i2c
+	then
+	fi
+fi
+
+# lightware serial lidar sensor
+if param compare SENS_EN_SF0X 0
+then
+else
+	if sf0x start
+	then
+	fi
+fi
+
+# lightware i2c lidar sensor
+if param compare SENS_EN_SF1XX 0
+then
+else
+	if sf1xx start
+	then
+	fi
+fi
+
+# mb12xx sonar sensor
+if param compare SENS_EN_MB12XX 1
+then
+	if mb12xx start
+	then
+	fi
+fi
+
+# teraranger one tof sensor
+if param compare SENS_EN_TRONE 1
+then
+	if trone start
+	then
 	fi
 fi
 

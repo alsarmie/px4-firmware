@@ -232,7 +232,8 @@ int InputMavlinkCmdMount::update_impl(unsigned int timeout_ms, ControlData **con
 				case vehicle_command_s::VEHICLE_MOUNT_MODE_RETRACT:
 					_control_data.gimbal_shutter_retract = true;
 
-				//no break
+				/* FALLTHROUGH */
+
 				case vehicle_command_s::VEHICLE_MOUNT_MODE_NEUTRAL:
 					_control_data.type = ControlData::Type::Neutral;
 
@@ -306,4 +307,3 @@ void InputMavlinkCmdMount::print_status()
 
 
 } /* namespace vmount */
-

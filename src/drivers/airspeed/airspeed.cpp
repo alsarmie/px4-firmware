@@ -80,7 +80,6 @@
 Airspeed::Airspeed(int bus, int address, unsigned conversion_interval, const char *path) :
 	I2C("Airspeed", path, bus, address, 100000),
 	_reports(nullptr),
-	_max_differential_pressure_pa(0),
 	_sensor_ok(false),
 	_last_published_sensor_ok(true), /* initialize differently to force publication */
 	_measure_ticks(0),
@@ -151,7 +150,7 @@ Airspeed::init()
 		_airspeed_pub = orb_advertise(ORB_ID(differential_pressure), &arp);
 
 		if (_airspeed_pub == nullptr) {
-			warnx("uORB started?");
+			PX4_WARN("uORB started?");
 		}
 	}
 
@@ -190,7 +189,7 @@ Airspeed::ioctl(struct file *filp, int cmd, unsigned long arg)
 				_measure_ticks = 0;
 				return OK;
 
-			/* external signalling (DRDY) not supported */
+			/* external signaling (DRDY) not supported */
 			case SENSOR_POLLRATE_EXTERNAL:
 
 			/* zero would be bad */
