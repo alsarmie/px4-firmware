@@ -95,6 +95,36 @@ public:
 
 protected:
 
+	/**
+	 * @class Compatibility base class to convert topics to an updated format
+	 */
+	class CompatBase
+	{
+	public:
+		virtual ~CompatBase() = default;
+
+		/**
+		 * apply compatibility to a topic
+		 * @param data input topic (can be modified in place)
+		 * @return new topic data
+		 */
+		virtual void *apply(void *data) = 0;
+	};
+
+	class CompatSensorCombinedDtType : public CompatBase
+	{
+	public:
+		CompatSensorCombinedDtType(int gyro_integral_dt_offset_log, int gyro_integral_dt_offset_intern,
+					   int accelerometer_integral_dt_offset_log, int accelerometer_integral_dt_offset_intern);
+
+		void *apply(void *data) override;
+	private:
+		int _gyro_integral_dt_offset_log;
+		int _gyro_integral_dt_offset_intern;
+		int _accelerometer_integral_dt_offset_log;
+		int _accelerometer_integral_dt_offset_intern;
+	};
+
 	struct Subscription {
 
 		const orb_metadata *orb_meta = nullptr; ///< if nullptr, this subscription is invalid
@@ -107,10 +137,22 @@ protected:
 		std::streampos next_read_pos;
 		uint64_t next_timestamp; ///< timestamp of the file
 
+		CompatBase *compat = nullptr;
+
 		// statistics
 		int error_counter = 0;
 		int publication_counter = 0;
 	};
+
+	/**
+	 * Find the offset & field size in bytes for a given field name
+	 * @param format format string, as specified by ULog
+	 * @param field_name search for this field
+	 * @param offset returned offset
+	 * @param field_size returned field size
+	 * @return true if found, false otherwise
+	 */
+	static bool findFieldOffset(const std::string &format, const std::string &field_name, int &offset, int &field_size);
 
 	/**
 	 * publish an orb topic
