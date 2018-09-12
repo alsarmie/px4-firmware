@@ -1205,8 +1205,8 @@ PX4FMU::cycle()
 				actuator_outputs.noutputs = mixed_num_outputs;
 
 				// zero unused outputs
-				for (size_t i = 0; i < mixed_num_outputs; ++i) {
-					actuator_outputs.output[i] = pwm_limited[i];
+				for (size_t i = 0; i < actuator_outputs_s::NUM_ACTUATOR_OUTPUTS; ++i) {
+					actuator_outputs.output[i] = (i < MAX_ACTUATORS) ? pwm_limited[i] : 0.0f;
 				}
 
 				orb_publish_auto(ORB_ID(actuator_outputs), &_outputs_pub, &actuator_outputs, &_class_instance, ORB_PRIO_DEFAULT);
