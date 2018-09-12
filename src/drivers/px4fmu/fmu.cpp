@@ -1171,14 +1171,14 @@ PX4FMU::cycle()
 
 				/* overwrite outputs in case of force_failsafe with _failsafe_pwm PWM values */
 				if (_armed.force_failsafe) {
-					for (size_t i = 0; i < mixed_num_outputs; i++) {
+					for (size_t i = 0; i < _max_actuators; i++) {
 						pwm_limited[i] = _failsafe_pwm[i];
 					}
 				}
 
 				/* overwrite outputs in case of lockdown with disarmed PWM values */
 				if (_armed.lockdown || _armed.manual_lockdown) {
-					for (size_t i = 0; i < mixed_num_outputs; i++) {
+					for (size_t i = 0; i < _max_actuators; i++) {
 						pwm_limited[i] = _disarmed_pwm[i];
 					}
 				}
