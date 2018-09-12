@@ -1034,6 +1034,8 @@ PX4FMU::run()
 void
 PX4FMU::cycle()
 {
+	bool updated = false;
+
 	while (true) {
 
 		if (_groups_subscribed != _groups_required) {
@@ -1273,10 +1275,11 @@ PX4FMU::cycle()
 			}
 		}
 
-#endif
+		_safety_off = _safety_btn_off;
+
+#else
 
 		/* check safety button state */
-		bool updated = false;
 		orb_check(_safety_sub, &updated);
 
 		if (updated) {
@@ -1286,6 +1289,8 @@ PX4FMU::cycle()
 				_safety_off = !safety.safety_switch_available || safety.safety_off;
 			}
 		}
+
+#endif
 
 		/* check arming state */
 		orb_check(_armed_sub, &updated);
