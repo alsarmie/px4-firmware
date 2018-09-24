@@ -8,11 +8,6 @@
 
 orb_advert_t mavlink_log_pub = nullptr;
 
-// required standard deviation of estimate for estimator to publish data
-static const uint32_t		EST_STDDEV_XY_VALID = 2.0;	// 2.0 m
-static const uint32_t		EST_STDDEV_Z_VALID = 2.0;	// 2.0 m
-static const uint32_t		EST_STDDEV_TZ_VALID = 2.0;	// 2.0 m
-
 static const float P_MAX = 1.0e6f;	// max allowed value in state covariance
 static const float LAND_RATE = 10.0f;	// rate of land detector correction
 
@@ -96,6 +91,7 @@ BlockLocalPositionEstimator::BlockLocalPositionEstimator() :
 	_time_last_mocap(0),
 	_time_last_land(0),
 	_time_last_target(0),
+        _time_warn_flow(0),
 
 	// reference altitudes
 	_altOrigin(0),
@@ -222,25 +218,25 @@ void BlockLocalPositionEstimator::update()
 	// selection param, but is really not helping outdoors
 	// right now.
 
-	// if (!_lastArmedState && armedState) {
+	if (!_lastArmedState && armedState) {
 
-	//      // we just armed, we are at origin on the ground
-	//      _x(X_x) = 0;
-	//      _x(X_y) = 0;
-	//      // reset Z or not? _x(X_z) = 0;
+		// we just armed, we are at origin on the ground
+		_x(X_x) = 0;
+		_x(X_y) = 0;
+		// reset Z or not? _x(X_z) = 0;
 
-	//      // we aren't moving, all velocities are zero
-	//      _x(X_vx) = 0;
-	//      _x(X_vy) = 0;
-	//      _x(X_vz) = 0;
+		// we aren't moving, all velocities are zero
+		_x(X_vx) = 0;
+		_x(X_vy) = 0;
+		_x(X_vz) = 0;
 
-	//      // assume we are on the ground, so terrain alt is local alt
-	//      _x(X_tz) = _x(X_z);
-
-	//      // reset lowpass filter as well
-	//      _xLowPass.setState(_x);
-	//      _aglLowPass.setState(0);
-	// }
+		// assume we are on the ground, so terrain alt is local alt
+		_x(X_tz) = _x(X_z);
+		
+		// reset lowpass filter as well
+		_xLowPass.setState(_x);
+		_aglLowPass.setState(0);
+	}
 
 	_lastArmedState = armedState;
 
@@ -275,59 +271,41 @@ void BlockLocalPositionEstimator::update()
 	}
 
 	// is xy valid?
-	bool vxy_stddev_ok = false;
+	float xy_stddev = sqrtf(math::max(_P(X_x, X_x), _P(X_y, X_y)));
+	bool xy_stddev_ok =  xy_stddev < _xy_pub_thresh.get();
 
-	if (math::max(_P(X_vx, X_vx), _P(X_vy, X_vy)) < _vxy_pub_thresh.get() * _vxy_pub_thresh.get()) {
-		vxy_stddev_ok = true;
+	if (!xy_stddev_ok && (_estimatorInitialized & EST_XY)) {
+		_estimatorInitialized &= ~EST_XY;
+	} else if (xy_stddev_ok && (~_sensorTimeout & SENSOR_XY_MASK)) {
+		_estimatorInitialized |= EST_XY;
 	}
 
-	if (_estimatorInitialized & EST_XY) {
-		// if valid and gps has timed out, set to not valid
-		if (!vxy_stddev_ok && (_sensorTimeout & SENSOR_GPS)) {
-			_estimatorInitialized &= ~EST_XY;
-		}
+	// is vxy valid?
+	float vxy_stddev = sqrtf(math::max(_P(X_vx, X_vx), _P(X_vy, X_vy)));
+	bool vxy_stddev_ok =  vxy_stddev < _vxy_pub_thresh.get();
 
-	} else {
-		if (vxy_stddev_ok) {
-			if (!(_sensorTimeout & SENSOR_GPS)
-			    || !(_sensorTimeout & SENSOR_FLOW)
-			    || !(_sensorTimeout & SENSOR_VISION)
-			    || !(_sensorTimeout & SENSOR_MOCAP)
-			    || !(_sensorTimeout & SENSOR_LAND)
-			    || !(_sensorTimeout & SENSOR_LAND_TARGET)
-			   ) {
-				_estimatorInitialized |= EST_XY;
-			}
-		}
+	if (!vxy_stddev_ok && (_estimatorInitialized & EST_VXY)) {
+		_estimatorInitialized &= ~EST_VXY;
+	} else if (vxy_stddev_ok && (~_sensorTimeout & SENSOR_VXY_MASK)) {
+		_estimatorInitialized |= EST_VXY;
 	}
 
 	// is z valid?
 	bool z_stddev_ok = sqrtf(_P(X_z, X_z)) < _z_pub_thresh.get();
 
-	if (_estimatorInitialized & EST_Z) {
-		// if valid and baro has timed out, set to not valid
-		if (!z_stddev_ok && (_sensorTimeout & SENSOR_BARO)) {
-			_estimatorInitialized &= ~EST_Z;
-		}
-
-	} else {
-		if (z_stddev_ok) {
-			_estimatorInitialized |= EST_Z;
-		}
+	if (!z_stddev_ok && (_estimatorInitialized & EST_Z)) {
+		_estimatorInitialized &= ~EST_Z;
+	} else if (z_stddev_ok) {
+		_estimatorInitialized |= EST_Z;
 	}
 
-	// is terrain valid?
+	// is terrain z valid?
 	bool tz_stddev_ok = sqrtf(_P(X_tz, X_tz)) < _z_pub_thresh.get();
 
-	if (_estimatorInitialized & EST_TZ) {
-		if (!tz_stddev_ok) {
-			_estimatorInitialized &= ~EST_TZ;
-		}
-
-	} else {
-		if (tz_stddev_ok) {
-			_estimatorInitialized |= EST_TZ;
-		}
+	if (!tz_stddev_ok && (_estimatorInitialized & EST_TZ)) {
+		_estimatorInitialized &= ~EST_TZ;
+	} else if (tz_stddev_ok) {
+		_estimatorInitialized |= EST_TZ;
 	}
 
 	// check timeouts
@@ -487,13 +465,13 @@ void BlockLocalPositionEstimator::update()
 		}
 	}
 
-	if (_altOriginInitialized) {
-		// update all publications if possible
-		publishLocalPos();
-		publishEstimatorStatus();
-		_pub_innov.get().timestamp = _timeStamp;
-		_pub_innov.update();
+	// update all publications if possible
+	publishLocalPos();
+	publishEstimatorStatus();
+	_pub_innov.get().timestamp = _timeStamp;
+	_pub_innov.update();
 
+	if (_altOriginInitialized) {
 		if ((_estimatorInitialized & EST_XY) && (_map_ref.init_done || _fake_origin.get())) {
 			publishGlobalPos();
 		}
@@ -564,7 +542,7 @@ void BlockLocalPositionEstimator::publishLocalPos()
 		_pub_lpos.get().timestamp = _timeStamp;
 		_pub_lpos.get().xy_valid = _estimatorInitialized & EST_XY;
 		_pub_lpos.get().z_valid = _estimatorInitialized & EST_Z;
-		_pub_lpos.get().v_xy_valid = _estimatorInitialized & EST_XY;
+		_pub_lpos.get().v_xy_valid = _estimatorInitialized & EST_VXY;
 		_pub_lpos.get().v_z_valid = _estimatorInitialized & EST_Z;
 		_pub_lpos.get().x = xLP(X_x);	// north
 		_pub_lpos.get().y = xLP(X_y);	// east
@@ -680,9 +658,10 @@ void BlockLocalPositionEstimator::initP()
 {
 	_P.setZero();
 	// initialize to twice valid condition
-	_P(X_x, X_x) = 2 * EST_STDDEV_XY_VALID * EST_STDDEV_XY_VALID;
-	_P(X_y, X_y) = 2 * EST_STDDEV_XY_VALID * EST_STDDEV_XY_VALID;
-	_P(X_z, X_z) = 2 * EST_STDDEV_Z_VALID * EST_STDDEV_Z_VALID;
+	_P(X_x, X_x) = 2 * _xy_pub_thresh.get() * _xy_pub_thresh.get();
+	_P(X_y, X_y) = 2 * _xy_pub_thresh.get() * _xy_pub_thresh.get();
+	_P(X_z, X_z) = 2 * _z_pub_thresh.get() * _z_pub_thresh.get();
+	_P(X_tz, X_tz) = 2 * _z_pub_thresh.get() * _z_pub_thresh.get();
 	_P(X_vx, X_vx) = 2 * _vxy_pub_thresh.get() * _vxy_pub_thresh.get();
 	_P(X_vy, X_vy) = 2 * _vxy_pub_thresh.get() * _vxy_pub_thresh.get();
 	// use vxy thresh for vz init as well
@@ -691,7 +670,6 @@ void BlockLocalPositionEstimator::initP()
 	_P(X_bx, X_bx) = 1e-6;
 	_P(X_by, X_by) = 1e-6;
 	_P(X_bz, X_bz) = 1e-6;
-	_P(X_tz, X_tz) = 2 * EST_STDDEV_TZ_VALID * EST_STDDEV_TZ_VALID;
 }
 
 void BlockLocalPositionEstimator::initSS()
@@ -793,8 +771,8 @@ void BlockLocalPositionEstimator::predict()
 	k4 = dynamics(h, _x + k3 * h, _u);
 	Vector<float, n_x> dx = (k1 + k2 * 2 + k3 * 2 + k4) * (h / 6);
 
-	// don't integrate position if no valid xy data
-	if (!(_estimatorInitialized & EST_XY))  {
+	// don't integrate position if no valid vxy data
+	if (!(_estimatorInitialized & EST_VXY))  {
 		dx(X_x) = 0;
 		dx(X_vx) = 0;
 		dx(X_y) = 0;
@@ -876,3 +854,40 @@ int BlockLocalPositionEstimator::getDelayPeriods(float delay, uint8_t *periods)
 
 	return OK;
 }
+
+#define boolstr(x) ((x) ? "true" : "false")
+#define compareargs(x, y) boolstr((x) < (y)), #x, (double)(x), (double)(y), #y
+#define sensorargs(fuse, sensors) \
+	((fuse) & FUSE_BARO)        ? (((sensors) & SENSOR_BARO)        ? "BARO " : "baro ")                      : "", \
+	((fuse) & FUSE_GPS)         ? (((sensors) & SENSOR_GPS)         ? "GPS " : "gps ")                         : "", \
+	                               ((sensors) & SENSOR_LIDAR)       ? "LIDAR " : "lidar ", \
+	((fuse) & FUSE_FLOW)        ? (((sensors) & SENSOR_FLOW)        ? "FLOW " : "flow ")                      : "", \
+	                               ((sensors) & SENSOR_SONAR)       ? "SONAR " : "sonar ", \
+	((fuse) & FUSE_VIS_POS)     ? (((sensors) & SENSOR_VISION)      ? "VISION " : "vision ")                : "", \
+	                               ((sensors) & SENSOR_MOCAP)       ? "MOCAP " : "mocap ", \
+	((fuse) & FUSE_LAND)        ? (((sensors) & SENSOR_LAND)        ? "LAND " : "land ")                      : "", \
+	((fuse) & FUSE_LAND_TARGET) ? (((sensors) & SENSOR_LAND_TARGET) ? "LAND_TARGET " : "land_target ") : ""
+#define estimatorargs(estims) \
+	         ((estims) & EST_XY)  ? "XY "  : "xy ", \
+	         ((estims) & EST_VXY) ? "VXY " : "vxy ", \
+	         ((estims) & EST_Z)   ? "Z "   : "z ", \
+	         ((estims) & EST_TZ)  ? "TZ "  : "tz "
+void BlockLocalPositionEstimator::printInfo()
+{
+	float stddev_xy = sqrtf(_P(X_x, X_x) + _P(X_y, X_y));
+	float stddev_vxy = sqrtf(math::max(_P(X_vx, X_vx), _P(X_vy, X_vy)));
+	float stddev_z = sqrtf(_P(X_z, X_z));
+	float stddev_tz = sqrtf(_P(X_tz, X_tz));
+	PX4_INFO("xy_stddev_ok: %s. %s = %5.2f < %5.2f = %s", compareargs(stddev_xy, _xy_pub_thresh.get()));
+	PX4_INFO("vxy_stddev_ok: %s. %s = %5.2f < %5.2f = %s", compareargs(stddev_vxy, _vxy_pub_thresh.get()));
+	PX4_INFO("z_stddev_ok:   %s. %s = %5.2f < %5.2f = %s", compareargs(stddev_z, _z_pub_thresh.get()));
+	PX4_INFO("tz_stddev_ok:  %s. %s = %5.2f < %5.2f = %s", compareargs(stddev_tz, _z_pub_thresh.get()));
+	PX4_INFO("estimators initialized: %s%s%s%s", estimatorargs(_estimatorInitialized));
+	int fuse = _fusion.get();
+	PX4_INFO("sensor faults:   %s%s%s%s%s%s%s%s%s", sensorargs(fuse, _sensorFault));
+	PX4_INFO("sensor timeouts: %s%s%s%s%s%s%s%s%s", sensorargs(fuse, _sensorTimeout));
+}
+#undef estimatorargs
+#undef sensorargs
+#undef compareargs
+#undef boolstr

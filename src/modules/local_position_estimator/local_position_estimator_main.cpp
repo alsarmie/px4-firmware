@@ -65,6 +65,10 @@ public:
 	/** @see ModuleBase */
 	static int print_usage(const char *reason = nullptr);
 
+
+	/** @see ModuleBase::print_status() */
+	int print_status() override;
+
 	/** @see ModuleBase::run() */
 	void run() override;
 
@@ -100,12 +104,12 @@ int LocalPositionEstimatorModule::custom_command(int argc, char *argv[])
 
 int LocalPositionEstimatorModule::task_spawn(int argc, char *argv[])
 {
-		_task_id = px4_task_spawn_cmd("lp_estimator",
-						 SCHED_DEFAULT,
-						 SCHED_PRIORITY_ESTIMATOR,
-						 7900,
-						 (px4_main_t)&run_trampoline,
-						 (char *const *)argv);
+	_task_id = px4_task_spawn_cmd("lp_estimator",
+	                              SCHED_DEFAULT,
+	                              SCHED_PRIORITY_ESTIMATOR,
+	                              7900,
+	                              (px4_main_t)&run_trampoline,
+	                              (char *const *)argv);
 
 	if (_task_id < 0) {
 		_task_id = -1;
@@ -126,13 +130,19 @@ LocalPositionEstimatorModule *LocalPositionEstimatorModule::instantiate(int argc
 	return instance;
 }
 
+int LocalPositionEstimatorModule::print_status()
+{
+	PX4_INFO("running");
+	_estimator.printInfo();
+	return 0;
+}
+
 void LocalPositionEstimatorModule::run()
 {
 	while (!should_exit()) {
 		_estimator.update();
 	}
 }
-
 
 int local_position_estimator_main(int argc, char *argv[])
 {

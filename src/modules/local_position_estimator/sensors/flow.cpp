@@ -1,6 +1,7 @@
 #include "../BlockLocalPositionEstimator.hpp"
 #include <systemlib/mavlink_log.h>
 #include <matrix/math.hpp>
+#include <drivers/drv_hrt.h>
 
 // mavlink pub
 extern orb_advert_t mavlink_log_pub;
@@ -11,7 +12,10 @@ static const uint32_t		REQ_FLOW_INIT_COUNT = 10;
 static const uint32_t		FLOW_TIMEOUT = 1000000;	// 1 s
 
 // minimum flow altitude
-static const float flow_min_agl = 0.3;
+static const float flow_min_agl = 0.05;
+
+#define PRFX "[lpe.flow] "
+#define RATE_LIMIT(interval, time) (((time) + (uint64_t)(interval)*1.0e6f < hrt_absolute_time()) ? (time) = hrt_absolute_time() : 0)
 
 void BlockLocalPositionEstimator::flowInit()
 {
@@ -25,8 +29,8 @@ void BlockLocalPositionEstimator::flowInit()
 
 	// if finished
 	if (_flowQStats.getCount() > REQ_FLOW_INIT_COUNT) {
-		mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] flow init: "
-					     "quality %d std %d",
+		mavlink_and_console_log_info(&mavlink_log_pub, PRFX "init, "
+					     "quality: %d, std: %d",
 					     int(_flowQStats.getMean()(0)),
 					     int(_flowQStats.getStdDev()(0)));
 		_sensorTimeout &= ~SENSOR_FLOW;
@@ -36,65 +40,76 @@ void BlockLocalPositionEstimator::flowInit()
 
 int BlockLocalPositionEstimator::flowMeasure(Vector<float, n_y_flow> &y)
 {
+	float qual = _sub_flow.get().quality;
+
+#if 0
 	// check for sane pitch/roll
 	if (_eul(0) > 0.5f || _eul(1) > 0.5f) {
-		return -1;
-	}
-
-	// check for agl
-	if (agl() < flow_min_agl) {
+        if (RATE_LIMIT(5.0f, _time_warn_flow)) {
+			mavlink_and_console_log_info(&mavlink_log_pub, PRFX "attitude too far from level");
+        }
 		return -1;
 	}
 
 	// check quality
-	float qual = _sub_flow.get().quality;
-
 	if (qual < _flow_min_q.get()) {
+        if (RATE_LIMIT(5.0f, _time_warn_flow)) {
+			mavlink_and_console_log_info(&mavlink_log_pub, PRFX "flow quality below threshold");
+        }
+		return -1;
+    }
+
+	// check for agl
+	if (agl() < flow_min_agl) {
+        if (RATE_LIMIT(5.0f, _time_warn_flow)) {
+			mavlink_and_console_log_info(&mavlink_log_pub, PRFX "agl too low");
+        }
 		return -1;
 	}
+#endif
 
+#if 0
 	// calculate range to center of image for flow
 	if (!(_estimatorInitialized & EST_TZ)) {
+        if (RATE_LIMIT(5.0f, _time_warn_flow)) {
+			mavlink_and_console_log_info(&mavlink_log_pub, PRFX "terrain height not known, cannot determine AGL");
+        }
 		return -1;
 	}
+#endif
 
 	matrix::Eulerf euler = matrix::Quatf(_sub_att.get().q);
-
-	float d = agl() * cosf(euler.phi()) * cosf(euler.theta());
+	float d = math::max(flow_min_agl, agl()) * cosf(euler.phi()) * cosf(euler.theta());
 
 	// optical flow in x, y axis
 	// TODO consider making flow scale a states of the kalman filter
 	float flow_x_rad = _sub_flow.get().pixel_flow_x_integral * _flow_scale.get();
 	float flow_y_rad = _sub_flow.get().pixel_flow_y_integral * _flow_scale.get();
-	float dt_flow = _sub_flow.get().integration_timespan / 1.0e6f;
+	float dt_flow    = _sub_flow.get().integration_timespan / 1.0e6f;
 
 	if (dt_flow > 0.5f || dt_flow < 1.0e-6f) {
 		return -1;
 	}
 
-	// angular rotation in x, y axis
-	float gyro_x_rad = 0;
-	float gyro_y_rad = 0;
-
 	if (_fusion.get() & FUSE_FLOW_GYRO_COMP) {
-		gyro_x_rad = _flow_gyro_x_high_pass.update(
-				     _sub_flow.get().gyro_x_rate_integral);
-		gyro_y_rad = _flow_gyro_y_high_pass.update(
-				     _sub_flow.get().gyro_y_rate_integral);
+		flow_x_rad -= _flow_gyro_x_high_pass.update(_sub_flow.get().gyro_x_rate_integral);
+		flow_y_rad -= _flow_gyro_y_high_pass.update(_sub_flow.get().gyro_y_rate_integral);
 	}
 
 	//warnx("flow x: %10.4f y: %10.4f gyro_x: %10.4f gyro_y: %10.4f d: %10.4f",
 	//double(flow_x_rad), double(flow_y_rad), double(gyro_x_rad), double(gyro_y_rad), double(d));
 
 	// compute velocities in body frame using ground distance
-	// note that the integral rates in the optical_flow uORB topic are RH rotations about body axes
+	// note that the integral rates in the optical_flow uORB topic are RH
+	// rotations about body axes
 	Vector3f delta_b(
-		+(flow_y_rad - gyro_y_rad) * d,
-		-(flow_x_rad - gyro_x_rad) * d,
+		+d*flow_y_rad,
+		-d*flow_x_rad,
 		0);
 
 	// rotation of flow from body to nav frame
 	Vector3f delta_n = _R_att * delta_b;
+	//Vector3f delta_n = delta_b;
 
 	// imporant to timestamp flow even if distance is bad
 	_time_last_flow = _timeStamp;
@@ -103,7 +118,7 @@ int BlockLocalPositionEstimator::flowMeasure(Vector<float, n_y_flow> &y)
 	y(Y_flow_vx) = delta_n(0) / dt_flow;
 	y(Y_flow_vy) = delta_n(1) / dt_flow;
 
-	_flowQStats.update(Scalarf(_sub_flow.get().quality));
+	_flowQStats.update(Scalarf(qual));
 
 	return OK;
 }
@@ -123,51 +138,11 @@ void BlockLocalPositionEstimator::flowCorrect()
 
 	SquareMatrix<float, n_y_flow> R;
 	R.setZero();
-
-	// polynomial noise model, found using least squares fit
-	// h, h**2, v, v*h, v*h**2
-	const float p[5] = {0.04005232f, -0.00656446f, -0.26265873f,  0.13686658f, -0.00397357f};
-
-	// prevent extrapolation past end of polynomial fit by bounding independent variables
-	float h = agl();
-	float v = y.norm();
-	const float h_min = 2.0f;
-	const float h_max = 8.0f;
-	const float v_min = 0.5f;
-	const float v_max = 1.0f;
-
-	if (h > h_max) {
-		h = h_max;
-	}
-
-	if (h < h_min) {
-		h = h_min;
-	}
-
-	if (v > v_max) {
-		v = v_max;
-	}
-
-	if (v < v_min) {
-		v = v_min;
-	}
-
-	// compute polynomial value
-	float flow_vxy_stddev = p[0] * h + p[1] * h * h + p[2] * v + p[3] * v * h + p[4] * v * h * h;
-
-	float rotrate_sq = _sub_att.get().rollspeed * _sub_att.get().rollspeed
-			   + _sub_att.get().pitchspeed * _sub_att.get().pitchspeed
-			   + _sub_att.get().yawspeed * _sub_att.get().yawspeed;
-
-	float rot_sq = _eul(0) * _eul(0) + _eul(1) * _eul(1);
-
-	R(Y_flow_vx, Y_flow_vx) = flow_vxy_stddev * flow_vxy_stddev +
-				  _flow_r.get() * _flow_r.get() * rot_sq +
-				  _flow_rr.get() * _flow_rr.get() * rotrate_sq;
-	R(Y_flow_vy, Y_flow_vy) = R(Y_flow_vx, Y_flow_vx);
+	R(Y_flow_vx, Y_flow_vx) = _flow_p_stddev.get();
+	R(Y_flow_vy, Y_flow_vy) = _flow_p_stddev.get();
 
 	// residual
-	Vector<float, 2> r = y - C * _x;
+	Vector<float, n_y_flow> r = y - C * _x;
 
 	// residual covariance
 	Matrix<float, n_y_flow, n_y_flow> S = C * _P * C.transpose() + R;
@@ -181,27 +156,34 @@ void BlockLocalPositionEstimator::flowCorrect()
 	// residual covariance, (inverse)
 	Matrix<float, n_y_flow, n_y_flow> S_I = inv<float, n_y_flow>(S);
 
+#if 0
 	// fault detection
 	float beta = (r.transpose() * (S_I * r))(0, 0);
 
 	if (beta > BETA_TABLE[n_y_flow]) {
 		if (!(_sensorFault & SENSOR_FLOW)) {
-			mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] flow fault,  beta %5.2f", double(beta));
+			mavlink_and_console_log_info(&mavlink_log_pub, PRFX "fault, beta %5.2f", double(beta));
 			_sensorFault |= SENSOR_FLOW;
 		}
-
 	} else if (_sensorFault & SENSOR_FLOW) {
 		_sensorFault &= ~SENSOR_FLOW;
-		mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] flow OK");
+		mavlink_and_console_log_info(&mavlink_log_pub, PRFX "OK");
 	}
+#endif
 
 	if (!(_sensorFault & SENSOR_FLOW)) {
-		Matrix<float, n_x, n_y_flow> K =
-			_P * C.transpose() * S_I;
-		Vector<float, n_x> dx = K * r;
-		_x += dx;
+		Matrix<float, n_x, n_y_flow> K = _P * C.transpose() * S_I;
+		//Vector<float, n_x> dx = K * r;
+		//_x += dx;
+		_x += C.transpose() * r;
 		_P -= K * C * _P;
 	}
+
+#if 0
+	_sensorFault &= ~SENSOR_FLOW;
+    _x(X_vx) = y(Y_flow_vx);
+    _x(X_vy) = y(Y_flow_vy);
+#endif
 }
 
 void BlockLocalPositionEstimator::flowCheckTimeout()
@@ -210,7 +192,9 @@ void BlockLocalPositionEstimator::flowCheckTimeout()
 		if (!(_sensorTimeout & SENSOR_FLOW)) {
 			_sensorTimeout |= SENSOR_FLOW;
 			_flowQStats.reset();
-			mavlink_log_critical(&mavlink_log_pub, "[lpe] flow timeout ");
+			mavlink_log_critical(&mavlink_log_pub, PRFX "timeout");
 		}
 	}
 }
+
+#undef PRFX

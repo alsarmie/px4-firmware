@@ -64,6 +64,7 @@ void BlockLocalPositionEstimator::landCorrect()
 	_pub_innov.get().hagl_innov = r(Y_land_agl);
 	_pub_innov.get().hagl_innov_var = R(Y_land_agl, Y_land_agl);
 
+/*
 	// fault detection
 	float beta = (r.transpose() * (S_I * r))(0, 0);
 
@@ -83,6 +84,7 @@ void BlockLocalPositionEstimator::landCorrect()
 		_sensorFault &= ~SENSOR_LAND;
 		mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] land OK");
 	}
+*/
 
 	// kalman filter correction always for land detector
 	Matrix<float, n_x, n_y_land> K = _P * C.transpose() * S_I;

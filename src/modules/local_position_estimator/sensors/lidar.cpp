@@ -54,7 +54,7 @@ int BlockLocalPositionEstimator::lidarMeasure(Vector<float, n_y_lidar> &y)
 	_lidarStats.update(Scalarf(d));
 	_time_last_lidar = _timeStamp;
 	y.setZero();
-	y(0) = (d + _lidar_z_offset.get()) *
+	y(Y_lidar_z) = (d + _lidar_z_offset.get()) *
 	       cosf(_eul(0)) *
 	       cosf(_eul(1));
 	return OK;
@@ -70,10 +70,11 @@ void BlockLocalPositionEstimator::lidarCorrect()
 	// measurement matrix
 	Matrix<float, n_y_lidar, n_x> C;
 	C.setZero();
-	// y = -(z - tz)
+	// y = -z
 	// TODO could add trig to make this an EKF correction
 	C(Y_lidar_z, X_z) = -1;	// measured altitude, negative down dir.
-	C(Y_lidar_z, X_tz) = 1;	// measured altitude, negative down dir.
+	// force X_tz to zero when using a lidar
+	C(Y_lidar_tz, X_tz) = 1;
 
 	// use parameter covariance unless sensor provides reasonable value
 	SquareMatrix<float, n_y_lidar> R;
@@ -87,6 +88,8 @@ void BlockLocalPositionEstimator::lidarCorrect()
 		R(0, 0) = cov;
 	}
 
+	R(1, 1) = _lidar_z_stddev.get() * _lidar_z_stddev.get();
+
 	// residual
 	Vector<float, n_y_lidar> r = y - C * _x;
 	// residual covariance
@@ -99,6 +102,7 @@ void BlockLocalPositionEstimator::lidarCorrect()
 	// residual covariance, (inverse)
 	Matrix<float, n_y_lidar, n_y_lidar> S_I = inv<float, n_y_lidar>(S);
 
+#if 0
 	// fault detection
 	float beta = (r.transpose() * (S_I * r))(0, 0);
 
@@ -115,6 +119,7 @@ void BlockLocalPositionEstimator::lidarCorrect()
 		_sensorFault &= ~SENSOR_LIDAR;
 		mavlink_and_console_log_info(&mavlink_log_pub, PRFX "OK");
 	}
+#endif
 
 	// kalman filter correction always
 	Matrix<float, n_x, n_y_lidar> K = _P * C.transpose() * S_I;

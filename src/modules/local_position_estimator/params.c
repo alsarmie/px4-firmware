@@ -25,26 +25,15 @@ PARAM_DEFINE_FLOAT(LPE_FLW_OFF_Z, 0.0f);
 PARAM_DEFINE_FLOAT(LPE_FLW_SCALE, 1.3f);
 
 /**
- * Optical flow rotation (roll/pitch) noise gain
+ * Optical flow standard deviation
  *
  * @group Local Position Estimator
  * @unit m/s / (rad)
- * @min 0.1
- * @max 10.0
- * @decimal 3
+ * @min 0.0001
+ * @max 1.0
+ * @decimal 5
  */
-PARAM_DEFINE_FLOAT(LPE_FLW_R, 7.0f);
-
-/**
- * Optical flow angular velocity noise gain
- *
- * @group Local Position Estimator
- * @unit m/s / (rad/s)
- * @min 0.0
- * @max 10.0
- * @decimal 3
- */
-PARAM_DEFINE_FLOAT(LPE_FLW_RR, 7.0f);
+PARAM_DEFINE_FLOAT(LPE_FLW_P, 1.0e-3f);
 
 /**
  * Optical flow minimum quality threshold
@@ -379,6 +368,17 @@ PARAM_DEFINE_FLOAT(LPE_LON, 8.545594);
  * @decimal 0
  */
 PARAM_DEFINE_FLOAT(LPE_X_LP, 5.0f);
+
+/**
+ * Required xy standard deviation to publish position
+ *
+ * @group Local Position Estimator
+ * @unit m/s
+ * @min 0.01
+ * @max 1.0
+ * @decimal 3
+ */
+PARAM_DEFINE_FLOAT(LPE_XY_PUB, 0.3f);
 
 /**
  * Required velocity xy standard deviation to publish position

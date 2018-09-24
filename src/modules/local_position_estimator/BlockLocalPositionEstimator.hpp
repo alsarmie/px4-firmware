@@ -108,7 +108,7 @@ public:
 	enum {X_x = 0, X_y, X_z, X_vx, X_vy, X_vz, X_bx, X_by, X_bz, X_tz, n_x};
 	enum {U_ax = 0, U_ay, U_az, n_u};
 	enum {Y_baro_z = 0, n_y_baro};
-	enum {Y_lidar_z = 0, n_y_lidar};
+	enum {Y_lidar_z = 0, Y_lidar_tz, n_y_lidar};
 	enum {Y_flow_vx = 0, Y_flow_vy, n_y_flow};
 	enum {Y_sonar_z = 0, n_y_sonar};
 	enum {Y_gps_x = 0, Y_gps_y, Y_gps_z, Y_gps_vx, Y_gps_vy, Y_gps_vz, n_y_gps};
@@ -128,7 +128,7 @@ public:
 		FUSE_BARO = 1 << 7
 	};
 
-	enum sensor_t {
+	enum Sensors {
 		SENSOR_BARO = 1 << 0,
 		SENSOR_GPS = 1 << 1,
 		SENSOR_LIDAR = 1 << 2,
@@ -137,11 +137,25 @@ public:
 		SENSOR_VISION = 1 << 5,
 		SENSOR_MOCAP = 1 << 6,
 		SENSOR_LAND = 1 << 7,
-		SENSOR_LAND_TARGET = 1 << 8,
+		SENSOR_LAND_TARGET = 1 << 8
 	};
+
+	// sensors giving xy coordinates
+	static constexpr Sensors SENSOR_XY_MASK = (Sensors)(SENSOR_GPS | SENSOR_VISION |
+		SENSOR_MOCAP | SENSOR_LAND);
+
+	// sensors giving xy velocities, includes the xy sensors since they also
+	// give velocity
+	static constexpr Sensors SENSOR_VXY_MASK = (Sensors)(SENSOR_XY_MASK | SENSOR_FLOW |
+		SENSOR_LAND_TARGET);
+
+	// sensors giving z coordinates
+	static constexpr Sensors SENSOR_Z_MASK = (Sensors)(SENSOR_BARO | SENSOR_LIDAR |
+		SENSOR_SONAR | SENSOR_VISION | SENSOR_MOCAP | SENSOR_LAND);
 
 	enum estimate_t {
 		EST_XY = 1 << 0,
+		EST_VXY = 1 << 0,
 		EST_Z = 1 << 1,
 		EST_TZ = 1 << 2,
 	};
@@ -149,6 +163,7 @@ public:
 	// public methods
 	BlockLocalPositionEstimator();
 	void update();
+	void printInfo();
 	virtual ~BlockLocalPositionEstimator() = default;
 
 private:
@@ -278,6 +293,7 @@ private:
 
 		// general parameters
 		(ParamInt<px4::params::LPE_FUSION>) _fusion,
+		(ParamFloat<px4::params::LPE_XY_PUB>) _xy_pub_thresh,
 		(ParamFloat<px4::params::LPE_VXY_PUB>) _vxy_pub_thresh,
 		(ParamFloat<px4::params::LPE_Z_PUB>) _z_pub_thresh,
 
@@ -316,9 +332,8 @@ private:
 		// flow parameters
 		(ParamFloat<px4::params::LPE_FLW_OFF_Z>) _flow_z_offset,
 		(ParamFloat<px4::params::LPE_FLW_SCALE>) _flow_scale,
+		(ParamFloat<px4::params::LPE_FLW_P>) _flow_p_stddev,
 		(ParamInt<px4::params::LPE_FLW_QMIN>) _flow_min_q,
-		(ParamFloat<px4::params::LPE_FLW_R>) _flow_r,
-		(ParamFloat<px4::params::LPE_FLW_RR>) _flow_rr,
 
 		// land parameters
 		(ParamFloat<px4::params::LPE_LAND_Z>) _land_z_stddev,
@@ -353,7 +368,7 @@ private:
 	// stats
 	BlockStats<float, n_y_baro> _baroStats;
 	BlockStats<float, n_y_sonar> _sonarStats;
-	BlockStats<float, n_y_lidar> _lidarStats;
+	BlockStats<float, 1> _lidarStats;
 	BlockStats<float, 1> _flowQStats;
 	BlockStats<float, n_y_vision> _visionStats;
 	BlockStats<float, n_y_mocap> _mocapStats;
@@ -384,6 +399,7 @@ private:
 	uint64_t _time_last_mocap;
 	uint64_t _time_last_land;
 	uint64_t _time_last_target;
+	uint64_t _time_warn_flow;
 
 	// reference altitudes
 	float _altOrigin;
