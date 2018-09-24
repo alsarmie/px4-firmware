@@ -42,29 +42,30 @@
 using namespace matrix;
 using namespace time_literals;
 
-bool FlightTaskManual::initializeSubscriptions(SubscriptionArray &subscription_array)
+Error FlightTaskManual::initializeSubscriptions(SubscriptionArray &subscription_array)
 {
-	if (!FlightTask::initializeSubscriptions(subscription_array)) {
-		return false;
+    auto error = FlightTask::initializeSubscriptions(subscription_array);
+	if (error) {
+		return error;
 	}
 
 	if (!subscription_array.get(ORB_ID(manual_control_setpoint), _sub_manual_control_setpoint)) {
-		return false;
+		return "failed to get manual_control_setpoint sub";
 	}
 
 	return true;
 }
 
-bool FlightTaskManual::updateInitialize()
+Error FlightTaskManual::updateInitialize()
 {
-	bool ret = FlightTask::updateInitialize();
+	auto error = FlightTask::updateInitialize();
 	const bool sticks_available = _evaluateSticks();
 
-	if (_sticks_data_required) {
-		ret = ret && sticks_available;
+	if (!error && _sticks_data_required && !sticks_available) {
+		error = "sticks required but not available";
 	}
 
-	return ret;
+	return error;
 }
 
 bool FlightTaskManual::_evaluateSticks()

@@ -40,14 +40,14 @@
 
 using namespace matrix;
 
-bool FlightTaskAutoMapper::activate()
+Error FlightTaskAutoMapper::activate()
 {
-	bool ret = FlightTaskAuto::activate();
+	auto ret = FlightTaskAuto::activate();
 	_reset();
 	return ret;
 }
 
-bool FlightTaskAutoMapper::update()
+Error FlightTaskAutoMapper::update()
 {
 	// always reset constraints because they might change depending on the type
 	_setDefaultConstraints();

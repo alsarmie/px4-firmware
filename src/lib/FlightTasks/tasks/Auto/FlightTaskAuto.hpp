@@ -74,9 +74,9 @@ public:
 	FlightTaskAuto() = default;
 
 	virtual ~FlightTaskAuto() = default;
-	bool initializeSubscriptions(SubscriptionArray &subscription_array) override;
-	bool activate() override;
-	bool updateInitialize() override;
+	Error initializeSubscriptions(SubscriptionArray &subscription_array) override;
+	Error activate() override;
+	Error updateInitialize() override;
 
 protected:
 	void _setDefaultConstraints() override;

@@ -46,8 +46,8 @@ public:
 	FlightTaskFailsafe() = default;
 
 	virtual ~FlightTaskFailsafe() = default;
-	bool update() override;
-	bool activate() override;
+	Error update() override;
+	Error activate() override;
 
 private:
 	DEFINE_PARAMETERS_CUSTOM_PARENT(FlightTask,

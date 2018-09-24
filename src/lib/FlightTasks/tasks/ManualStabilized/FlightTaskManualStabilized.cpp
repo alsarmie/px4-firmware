@@ -41,21 +41,30 @@
 
 using namespace matrix;
 
-bool FlightTaskManualStabilized::activate()
+Error FlightTaskManualStabilized::activate()
 {
-	bool ret = FlightTaskManual::activate();
+	auto error = FlightTaskManual::activate();
+	if (error) {
+		return error;
+	}
 	_thrust_setpoint = matrix::Vector3f(0.0f, 0.0f, -_throttle_hover.get());
 	_yaw_setpoint = _yaw;
 	_yawspeed_setpoint = 0.0f;
 	_constraints.tilt = math::radians(_tilt_max_man.get());
-	return ret;
+	return {};
 }
 
-bool FlightTaskManualStabilized::updateInitialize()
+Error FlightTaskManualStabilized::updateInitialize()
 {
-	bool ret = FlightTaskManual::updateInitialize();
+	auto error = FlightTaskManual::updateInitialize();
+	if (error) {
+		return error;
+	}
 	// need a valid yaw-state
-	return ret && PX4_ISFINITE(_yaw);
+	if (!PX4_ISFINITE(_yaw)) {
+		return "yaw is not finite, broken compass?";
+	}
+	return {};
 }
 
 void FlightTaskManualStabilized::_scaleSticks()
@@ -150,7 +159,7 @@ float FlightTaskManualStabilized::_throttleCurve()
 	}
 }
 
-bool FlightTaskManualStabilized::update()
+Error FlightTaskManualStabilized::update()
 {
 	_scaleSticks();
 	_updateSetpoints();

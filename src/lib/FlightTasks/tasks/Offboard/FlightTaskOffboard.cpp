@@ -39,7 +39,7 @@
 
 using namespace matrix;
 
-bool FlightTaskOffboard::initializeSubscriptions(SubscriptionArray &subscription_array)
+Error FlightTaskOffboard::initializeSubscriptions(SubscriptionArray &subscription_array)
 {
 	if (!FlightTask::initializeSubscriptions(subscription_array)) {
 		return false;
@@ -52,28 +52,33 @@ bool FlightTaskOffboard::initializeSubscriptions(SubscriptionArray &subscription
 	return true;
 }
 
-bool FlightTaskOffboard::updateInitialize()
+Error FlightTaskOffboard::updateInitialize()
 {
-	bool ret = FlightTask::updateInitialize();
+	Error error = FlightTask::updateInitialize();
 	// require a valid triplet
-	ret = ret && _sub_triplet_setpoint->get().current.valid;
+	if (!error && !_sub_triplet_setpoint->get().current.valid) {
+		error = "setpoint triplet is not valid";
+	}
 	// require valid position / velocity in xy
-	return ret && PX4_ISFINITE(_position(0))
+	if (!error && (!PX4_ISFINITE(_position(0))
 	       && PX4_ISFINITE(_position(1))
 	       && PX4_ISFINITE(_velocity(0))
-	       && PX4_ISFINITE(_velocity(1));
+	       && PX4_ISFINITE(_velocity(1)))) {
+		error = "xy position or velocity not finite";
+	}
+	return error;
 }
 
-bool FlightTaskOffboard::activate()
+Error FlightTaskOffboard::activate()
 {
-	bool ret = FlightTask::activate();
+	Error error = FlightTask::activate();
 	_position_setpoint = _position;
 	_velocity_setpoint *= 0.0f;
 	_position_lock *= NAN;
-	return ret;
+	return error;
 }
 
-bool FlightTaskOffboard::update()
+Error FlightTaskOffboard::update()
 {
 	if (!_sub_triplet_setpoint->get().current.valid) {
 		_resetSetpoints();

@@ -608,9 +608,12 @@ MulticopterPositionControl::task_main()
 			vehicle_local_position_setpoint_s setpoint;
 
 			// update task
-			if (!_flight_tasks.update()) {
+			Error error = _flight_tasks.update();
+
+			if (error) {
 				// FAILSAFE
 				// Task was not able to update correctly. Do Failsafe.
+				PX4_WARN("Task update failed with error: %s", error.msg);
 				failsafe(setpoint, _states, false);
 
 			} else {
@@ -769,10 +772,10 @@ MulticopterPositionControl::start_flight_task()
 		_control_mode.flag_control_velocity_enabled ||
 		_control_mode.flag_control_acceleration_enabled)) {
 
-		int error = _flight_tasks.switchTask(FlightTaskIndex::Offboard);
+		Error error = _flight_tasks.switchTask(FlightTaskIndex::Offboard);
 
-		if (error != 0) {
-			PX4_WARN("Offboard activation failded with error: %s", _flight_tasks.errorToString(error));
+		if (error) {
+			PX4_WARN("Offboard activation failed with error: %s", error.msg);
 			task_failure = true;
 			_task_failure_count++;
 
@@ -784,10 +787,10 @@ MulticopterPositionControl::start_flight_task()
 
 	// Auto-follow me
 	if (_vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_FOLLOW_TARGET) {
-		int error = _flight_tasks.switchTask(FlightTaskIndex::AutoFollowMe);
+		Error error = _flight_tasks.switchTask(FlightTaskIndex::AutoFollowMe);
 
-		if (error != 0) {
-			PX4_WARN("Follow-Me activation failed with error: %s", _flight_tasks.errorToString(error));
+		if (error) {
+			PX4_WARN("Follow-Me activation failed with error: %s", error.msg);
 			task_failure = true;
 			_task_failure_count++;
 
@@ -798,10 +801,10 @@ MulticopterPositionControl::start_flight_task()
 
 	} else if (_control_mode.flag_control_auto_enabled) {
 		// Auto relate maneuvers
-		int error = _flight_tasks.switchTask(FlightTaskIndex::AutoLine);
+		Error error = _flight_tasks.switchTask(FlightTaskIndex::AutoLine);
 
-		if (error != 0) {
-			PX4_WARN("Auto activation failed with error: %s", _flight_tasks.errorToString(error));
+		if (error) {
+			PX4_WARN("Auto activation failed with error: %s", error.msg);
 			task_failure = true;
 			_task_failure_count++;
 
@@ -814,7 +817,7 @@ MulticopterPositionControl::start_flight_task()
 	// manual position control
 	if (_vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_POSCTL || task_failure) {
 
-		int error = 0;
+		Error error;
 
 		switch (MPC_POS_MODE.get()) {
 		case 0:
@@ -834,8 +837,8 @@ MulticopterPositionControl::start_flight_task()
 			break;
 		}
 
-		if (error != 0) {
-			PX4_WARN("Position-Ctrl activation failed with error: %s", _flight_tasks.errorToString(error));
+		if (error) {
+			PX4_WARN("Position-Ctrl activation failed with error: %s", error.msg);
 			task_failure = true;
 			_task_failure_count++;
 
@@ -847,10 +850,10 @@ MulticopterPositionControl::start_flight_task()
 
 	// manual altitude control
 	if (_vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_ALTCTL || task_failure) {
-		int error = _flight_tasks.switchTask(FlightTaskIndex::ManualAltitude);
+		Error error = _flight_tasks.switchTask(FlightTaskIndex::ManualAltitude);
 
-		if (error != 0) {
-			PX4_WARN("Altitude-Ctrl activation failed with error: %s", _flight_tasks.errorToString(error));
+		if (error) {
+			PX4_WARN("Altitude-Ctrl activation failed with error: %s", error.msg);
 			task_failure = true;
 			_task_failure_count++;
 
@@ -863,10 +866,10 @@ MulticopterPositionControl::start_flight_task()
 	// manual stabilized control
 	if (_vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_MANUAL
 	    ||  _vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_STAB || task_failure) {
-		int error = _flight_tasks.switchTask(FlightTaskIndex::ManualStabilized);
+		Error error = _flight_tasks.switchTask(FlightTaskIndex::ManualStabilized);
 
-		if (error != 0) {
-			PX4_WARN("Stabilized-Ctrl failed with error: %s", _flight_tasks.errorToString(error));
+		if (error) {
+			PX4_WARN("Stabilized-Ctrl failed with error: %s", error.msg);
 			task_failure = true;
 			_task_failure_count++;
 
@@ -881,9 +884,9 @@ MulticopterPositionControl::start_flight_task()
 
 		// for some reason no flighttask was able to start.
 		// go into failsafe flighttask
-		int error = _flight_tasks.switchTask(FlightTaskIndex::Failsafe);
+		Error error = _flight_tasks.switchTask(FlightTaskIndex::Failsafe);
 
-		if (error != 0) {
+		if (error) {
 			// No task was activated.
 			_flight_tasks.switchTask(FlightTaskIndex::None);
 		}

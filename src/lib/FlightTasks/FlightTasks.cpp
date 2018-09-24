@@ -15,16 +15,24 @@ FlightTasks::FlightTasks()
 	_initTask(FlightTaskIndex::None);
 }
 
-bool FlightTasks::update()
+Error FlightTasks::update()
 {
+    Error error;
 	_updateCommand();
 
-	if (isAnyTaskActive()) {
-		_subscription_array.update();
-		return _current_task.task->updateInitialize() && _current_task.task->update();
+	if (!isAnyTaskActive()) {
+        return "no active task";
+    }
+
+	_subscription_array.update();
+	if ((error = _current_task.task->updateInitialize())) {
+        return error;
+    }
+    if ((error = _current_task.task->update())) {
+        return error;
 	}
 
-	return false;
+	return true;
 }
 
 const vehicle_local_position_setpoint_s FlightTasks::getPositionSetpoint()
@@ -62,45 +70,55 @@ const vehicle_trajectory_waypoint_s &FlightTasks::getEmptyAvoidanceWaypoint()
 	return FlightTask::empty_trajectory_waypoint;
 }
 
-int FlightTasks::switchTask(FlightTaskIndex new_task_index)
+Error FlightTasks::switchTask(FlightTaskIndex new_task_index)
 {
+    Error error;
+
 	// switch to the running task, nothing to do
 	if (new_task_index == _current_task.index) {
-		return 0;
+		return {};
 	}
 
 	if (_initTask(new_task_index)) {
 		// invalid task
-		return -1;
+		return {-1, "invalid task"};
 	}
 
 	if (!_current_task.task) {
 		// no task running
-		return 0;
+		return {};
 	}
 
 	// subscription failed
-	if (!_current_task.task->initializeSubscriptions(_subscription_array)) {
+	if ((error = _current_task.task->initializeSubscriptions(_subscription_array))) {
 		_current_task.task->~FlightTask();
 		_current_task.task = nullptr;
 		_current_task.index = FlightTaskIndex::None;
-		return -2;
+		return error;
 	}
 
 	_subscription_array.forcedUpdate(); // make sure data is available for all new subscriptions
 
-	// activation failed
-	if (!_current_task.task->updateInitialize() || !_current_task.task->activate()) {
+	// update initialize failed
+	if ((error = _current_task.task->updateInitialize())) {
 		_current_task.task->~FlightTask();
 		_current_task.task = nullptr;
 		_current_task.index = FlightTaskIndex::None;
-		return -3;
+		return error;
 	}
 
-	return 0;
+	// activation failed
+	if ((error = _current_task.task->activate())) {
+		_current_task.task->~FlightTask();
+		_current_task.task = nullptr;
+		_current_task.index = FlightTaskIndex::None;
+		return error;
+	}
+
+	return true;
 }
 
-int FlightTasks::switchTask(int new_task_index)
+Error FlightTasks::switchTask(int new_task_index)
 {
 	// make sure we are in range of the enumeration before casting
 	if (static_cast<int>(FlightTaskIndex::None) <= new_task_index &&
@@ -109,7 +127,7 @@ int FlightTasks::switchTask(int new_task_index)
 	}
 
 	switchTask(FlightTaskIndex::None);
-	return -1;
+	return "invalid task";
 }
 
 void FlightTasks::handleParameterUpdate()
@@ -121,8 +139,8 @@ void FlightTasks::handleParameterUpdate()
 
 const char *FlightTasks::errorToString(const int error)
 {
-	for (auto e : _taskError) {
-		if (e.error == error) {
+	for (auto e : _errors) {
+		if (e.num == error) {
 			return e.msg;
 		}
 	}

@@ -52,9 +52,9 @@ public:
 
 	virtual ~FlightTaskSport() = default;
 
-	bool activate() override
+	Error activate() override
 	{
-		bool ret = FlightTaskManualPosition::activate();
+		Error ret = FlightTaskManualPosition::activate();
 
 		// default constraints already are the maximum allowed limits
 		_setDefaultConstraints();

@@ -16,35 +16,38 @@ const vehicle_trajectory_waypoint_s FlightTask::empty_trajectory_waypoint = {0, 
 	}
 };
 
-bool FlightTask::initializeSubscriptions(SubscriptionArray &subscription_array)
+Error FlightTask::initializeSubscriptions(SubscriptionArray &subscription_array)
 {
 	if (!subscription_array.get(ORB_ID(vehicle_local_position), _sub_vehicle_local_position)) {
-		return false;
+		return "unable to subscribe to vehicle_local_position";
 	}
 
 	if (!subscription_array.get(ORB_ID(vehicle_attitude), _sub_attitude)) {
-		return false;
+		return "unable to subscribe to vehicle_attitude";
 	}
 
-	return true;
+	return {};
 }
 
-bool FlightTask::activate()
+Error FlightTask::activate()
 {
 	_resetSetpoints();
 	_setDefaultConstraints();
 	_time_stamp_activate = hrt_absolute_time();
 	_heading_reset_counter = _sub_attitude->get().quat_reset_counter;
-	return true;
+	return {};
 }
 
-bool FlightTask::updateInitialize()
+Error FlightTask::updateInitialize()
 {
 	_time_stamp_current = hrt_absolute_time();
 	_time = (_time_stamp_current - _time_stamp_activate) / 1e6f;
 	_deltatime  = math::min((_time_stamp_current - _time_stamp_last), _timeout) / 1e6f;
 	_time_stamp_last = _time_stamp_current;
-	return _evaluateVehicleLocalPosition();
+	if (!_evaluateVehicleLocalPosition()) {
+		return "no recent vehicle_local_position received";
+	}
+	return {};
 }
 
 const vehicle_local_position_setpoint_s FlightTask::getPositionSetpoint()

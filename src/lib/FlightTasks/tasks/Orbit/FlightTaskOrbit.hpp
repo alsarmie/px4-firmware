@@ -49,9 +49,9 @@ public:
 	FlightTaskOrbit();
 	virtual ~FlightTaskOrbit() = default;
 
-	bool applyCommandParameters(const vehicle_command_s &command) override;
-	bool activate() override;
-	bool update() override;
+	Error applyCommandParameters(const vehicle_command_s &command) override;
+	Error activate() override;
+	Error update() override;
 
 	/**
 	 * Check the feasibility of orbit parameters with respect to

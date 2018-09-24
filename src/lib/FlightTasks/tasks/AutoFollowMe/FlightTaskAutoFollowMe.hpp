@@ -46,5 +46,5 @@ class FlightTaskAutoFollowMe : public FlightTaskAuto
 public:
 	FlightTaskAutoFollowMe() = default;
 	virtual ~FlightTaskAutoFollowMe() = default;
-	bool update() override;
+	Error update() override;
 };

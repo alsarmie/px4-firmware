@@ -48,9 +48,9 @@ public:
 	FlightTaskManualStabilized() = default;
 
 	virtual ~FlightTaskManualStabilized() = default;
-	bool activate() override;
-	bool updateInitialize() override;
-	bool update() override;
+	Error activate() override;
+	Error updateInitialize() override;
+	Error update() override;
 
 protected:
 	virtual void _updateSetpoints(); /**< updates all setpoints*/

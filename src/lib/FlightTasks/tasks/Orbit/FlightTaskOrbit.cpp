@@ -46,9 +46,9 @@ FlightTaskOrbit::FlightTaskOrbit()
 	_sticks_data_required = false;
 }
 
-bool FlightTaskOrbit::applyCommandParameters(const vehicle_command_s &command)
+Error FlightTaskOrbit::applyCommandParameters(const vehicle_command_s &command)
 {
-	bool ret = true;
+	Error ret = true;
 	bool clockwise = _v > 0;
 
 	// commanded radius
@@ -117,26 +117,28 @@ bool FlightTaskOrbit::checkAcceleration(float r, float v, float a)
 	return v * v < a * r;
 }
 
-bool FlightTaskOrbit::activate()
+Error FlightTaskOrbit::activate()
 {
-	bool ret = FlightTaskManualAltitudeSmooth::activate();
+	Error error = FlightTaskManualAltitudeSmooth::activate();
 	_r = _radius_min;
 	_v =  1.f;
 	_center = Vector2f(_position.data());
 	_center(0) -= _r;
 
 	// need a valid position and velocity
-	ret = ret && PX4_ISFINITE(_position(0))
+	if (!error && (!PX4_ISFINITE(_position(0))
 	      && PX4_ISFINITE(_position(1))
 	      && PX4_ISFINITE(_position(2))
 	      && PX4_ISFINITE(_velocity(0))
 	      && PX4_ISFINITE(_velocity(1))
-	      && PX4_ISFINITE(_velocity(2));
+	      && PX4_ISFINITE(_velocity(2)))) {
+		error = "position or velocity not finite";
+	}
 
-	return ret;
+	return error;
 }
 
-bool FlightTaskOrbit::update()
+Error FlightTaskOrbit::update()
 {
 	// update altitude
 	FlightTaskManualAltitudeSmooth::update();

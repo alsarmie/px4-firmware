@@ -41,21 +41,24 @@
 
 using namespace matrix;
 
-bool FlightTaskManualPosition::updateInitialize()
+Error FlightTaskManualPosition::updateInitialize()
 {
-	bool ret = FlightTaskManualAltitude::updateInitialize();
+	Error error = FlightTaskManualAltitude::updateInitialize();
 	// require valid position / velocity in xy
-	return ret && PX4_ISFINITE(_position(0))
+	if (!error && !(PX4_ISFINITE(_position(0))
 	       && PX4_ISFINITE(_position(1))
 	       && PX4_ISFINITE(_velocity(0))
-	       && PX4_ISFINITE(_velocity(1));
+	       && PX4_ISFINITE(_velocity(1)))) {
+        error = "xy position or velocity not finite";
+    }
+    return error;
 }
 
-bool FlightTaskManualPosition::activate()
+Error FlightTaskManualPosition::activate()
 {
 
 	// all requirements from altitude-mode still have to hold
-	bool ret = FlightTaskManualAltitude::activate();
+	Error error = FlightTaskManualAltitude::activate();
 
 	// set task specific constraint
 	if (_constraints.speed_xy >= MPC_VEL_MANUAL.get()) {
@@ -69,7 +72,7 @@ bool FlightTaskManualPosition::activate()
 
 	// for position-controlled mode, we need a valid position and velocity state
 	// in NE-direction
-	return ret;
+	return error;
 }
 
 void FlightTaskManualPosition::_scaleSticks()

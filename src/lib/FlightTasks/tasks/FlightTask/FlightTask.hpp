@@ -51,6 +51,7 @@
 #include <uORB/topics/vehicle_constraints.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_trajectory_waypoint.h>
+#include "Error.hpp"
 #include "SubscriptionArray.hpp"
 
 class FlightTask : public ModuleParams
@@ -69,32 +70,32 @@ public:
 	 * Initialize the uORB subscriptions using an array
 	 * @return true on success, false on error
 	 */
-	virtual bool initializeSubscriptions(SubscriptionArray &subscription_array);
+	virtual Error initializeSubscriptions(SubscriptionArray &subscription_array);
 
 	/**
 	 * Call once on the event where you switch to the task
 	 * @return true on success, false on error
 	 */
-	virtual bool activate();
+	virtual Error activate();
 
 	/**
 	 * To be called to adopt parameters from an arrived vehicle command
 	 * @return true if accepted, false if declined
 	 */
-	virtual bool applyCommandParameters(const vehicle_command_s &command) { return true; }
+	virtual Error applyCommandParameters(const vehicle_command_s &command) { return true; }
 
 	/**
 	 * Call before activate() or update()
 	 * to initialize time and input data
 	 * @return true on success, false on error
 	 */
-	virtual bool updateInitialize();
+	virtual Error updateInitialize();
 
 	/**
 	 * To be called regularly in the control loop cycle to execute the task
 	 * @return true on success, false on error
 	 */
-	virtual bool update() = 0;
+	virtual Error update() = 0;
 
 	/**
 	 * Get the output data

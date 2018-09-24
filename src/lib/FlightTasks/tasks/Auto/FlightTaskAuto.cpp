@@ -42,26 +42,27 @@ using namespace matrix;
 
 static constexpr float SIGMA_NORM	= 0.001f;
 
-bool FlightTaskAuto::initializeSubscriptions(SubscriptionArray &subscription_array)
+Error FlightTaskAuto::initializeSubscriptions(SubscriptionArray &subscription_array)
 {
-	if (!FlightTask::initializeSubscriptions(subscription_array)) {
-		return false;
+	Error error;
+	if ((error = FlightTask::initializeSubscriptions(subscription_array))) {
+		return error;
 	}
 
 	if (!subscription_array.get(ORB_ID(position_setpoint_triplet), _sub_triplet_setpoint)) {
-		return false;
+		return "could not get position_setpoint_triplet sub";
 	}
 
 	if (!subscription_array.get(ORB_ID(home_position), _sub_home_position)) {
-		return false;
+		return "could not get home_position sub";
 	}
 
 	return true;
 }
 
-bool FlightTaskAuto::activate()
+Error FlightTaskAuto::activate()
 {
-	bool ret = FlightTask::activate();
+	auto ret = FlightTask::activate();
 	_position_setpoint = _position;
 	_velocity_setpoint = _velocity;
 	_yaw_setpoint = _yaw;
@@ -70,20 +71,27 @@ bool FlightTaskAuto::activate()
 	return ret;
 }
 
-bool FlightTaskAuto::updateInitialize()
+Error FlightTaskAuto::updateInitialize()
 {
-	bool ret = FlightTask::updateInitialize();
+	auto error = FlightTask::updateInitialize();
 	// require valid reference and valid target
-	ret = ret && _evaluateGlobalReference() && _evaluateTriplets();
+	if (!error && !_evaluateGlobalReference()) {
+		error = "global reference failed evaluation";
+	}
+	if (!error && !_evaluateTriplets()) {
+		error = "setpoint triplet failed evaluation";
+	}
 	// require valid position
-	ret = ret && PX4_ISFINITE(_position(0))
+	if (!error && !(PX4_ISFINITE(_position(0))
 	      && PX4_ISFINITE(_position(1))
 	      && PX4_ISFINITE(_position(2))
 	      && PX4_ISFINITE(_velocity(0))
 	      && PX4_ISFINITE(_velocity(1))
-	      && PX4_ISFINITE(_velocity(2));
+	      && PX4_ISFINITE(_velocity(2)))) {
+		error = "position or veloicty is not finite";
+	}
 
-	return ret;
+	return error;
 }
 
 bool FlightTaskAuto::_evaluateTriplets()

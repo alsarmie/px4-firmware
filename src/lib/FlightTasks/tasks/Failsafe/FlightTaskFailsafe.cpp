@@ -36,9 +36,9 @@
 
 #include "FlightTaskFailsafe.hpp"
 
-bool FlightTaskFailsafe::activate()
+Error FlightTaskFailsafe::activate()
 {
-	bool ret = FlightTask::activate();
+	auto ret = FlightTask::activate();
 	_position_setpoint = _position;
 	_velocity_setpoint.zero();
 	_thrust_setpoint = matrix::Vector3f(0.0f, 0.0f, -MPC_THR_HOVER.get() * 0.6f);
@@ -47,7 +47,7 @@ bool FlightTaskFailsafe::activate()
 	return ret;
 }
 
-bool FlightTaskFailsafe::update()
+Error FlightTaskFailsafe::update()
 {
 	if (PX4_ISFINITE(_position(0)) && PX4_ISFINITE(_position(1))) {
 		// stay at current position setpoint

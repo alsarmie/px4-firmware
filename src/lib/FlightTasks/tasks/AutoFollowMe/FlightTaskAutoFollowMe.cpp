@@ -40,7 +40,7 @@
 
 using namespace matrix;
 
-bool FlightTaskAutoFollowMe::update()
+Error FlightTaskAutoFollowMe::update()
 {
 	_position_setpoint = _target;
 	matrix::Vector2f vel_sp = _getTargetVelocityXY();

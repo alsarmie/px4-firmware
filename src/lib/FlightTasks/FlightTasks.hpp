@@ -63,7 +63,7 @@ public:
 	 * Call regularly in the control loop cycle to execute the task
 	 * @return true on success, false on error
 	 */
-	bool update();
+	Error update();
 
 	/**
 	 * Get the output data from the current task
@@ -93,15 +93,15 @@ public:
 	 * Switch to the next task in the available list (for testing)
 	 * @return 1 on success, <0 on error
 	 */
-	int switchTask() { return switchTask(static_cast<int>(_current_task.index) + 1); }
+	Error switchTask() { return switchTask(static_cast<int>(_current_task.index) + 1); }
 
 	/**
 	 * Switch to a specific task (for normal usage)
 	 * @param task index to switch to
 	 * @return 1 on success, 0 on no change, <0 on error
 	 */
-	int switchTask(FlightTaskIndex new_task_index);
-	int switchTask(int new_task_index);
+	Error switchTask(FlightTaskIndex new_task_index);
+	Error switchTask(int new_task_index);
 
 	/**
 	 * Get the number of the active task
@@ -141,20 +141,16 @@ private:
 
 	SubscriptionArray _subscription_array;
 
-	struct task_error_t {
-		int error;
-		const char *msg;
-	};
-
-	static const int _numError = 4;
+	static const int _numError = 5;
 	/**
 	 * Map from Error int to user friendly string.
 	 */
-	task_error_t _taskError[_numError] = {
-		{0, "No Error"},
+	Error _errors[_numError] = {
+		{ 0, "No Error"},
 		{-1, "Invalid Task "},
 		{-2, "Subscription Failed"},
-		{-3, "Activation Failed"}
+		{-3, "Update Initialize Failed"},
+		{-4, "Activation Failed"}
 	};
 	/**
 	 * Check for vehicle commands (received via MAVLink), evaluate and acknowledge them

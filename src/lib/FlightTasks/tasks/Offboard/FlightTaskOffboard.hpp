@@ -47,10 +47,10 @@ public:
 	FlightTaskOffboard() = default;
 
 	virtual ~FlightTaskOffboard() = default;
-	bool initializeSubscriptions(SubscriptionArray &subscription_array) override;
-	bool update() override;
-	bool activate() override;
-	bool updateInitialize() override;
+	Error initializeSubscriptions(SubscriptionArray &subscription_array) override;
+	Error update() override;
+	Error activate() override;
+	Error updateInitialize() override;
 
 protected:
 	uORB::Subscription<position_setpoint_triplet_s> *_sub_triplet_setpoint{nullptr};

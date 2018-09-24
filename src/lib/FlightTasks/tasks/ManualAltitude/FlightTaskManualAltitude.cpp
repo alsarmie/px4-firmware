@@ -41,16 +41,19 @@
 
 using namespace matrix;
 
-bool FlightTaskManualAltitude::updateInitialize()
+Error FlightTaskManualAltitude::updateInitialize()
 {
-	bool ret = FlightTaskManualStabilized::updateInitialize();
+	Error error = FlightTaskManualStabilized::updateInitialize();
 	// in addition to stabilized require valid position and velocity in D-direction
-	return ret && PX4_ISFINITE(_position(2)) && PX4_ISFINITE(_velocity(2));
+    if (!error && !(PX4_ISFINITE(_position(2)) && PX4_ISFINITE(_velocity(2)))) {
+        error = "z position or velocity not finite";
+    }
+	return error;
 }
 
-bool FlightTaskManualAltitude::activate()
+Error FlightTaskManualAltitude::activate()
 {
-	bool ret = FlightTaskManualStabilized::activate();
+	Error error = FlightTaskManualStabilized::activate();
 	_thrust_setpoint(2) = NAN; // altitude is controlled from position/velocity
 	_position_setpoint(2) = _position(2);
 	_velocity_setpoint(2) = 0.0f;
@@ -73,7 +76,7 @@ bool FlightTaskManualAltitude::activate()
 	_max_speed_up = _constraints.speed_up;
 	_min_speed_down = _constraints.speed_down;
 
-	return ret;
+	return error;
 }
 
 void FlightTaskManualAltitude::_scaleSticks()
