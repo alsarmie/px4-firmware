@@ -10,6 +10,8 @@ extern orb_advert_t mavlink_log_pub;
 static const uint32_t		REQ_LIDAR_INIT_COUNT = 10;
 static const uint32_t		LIDAR_TIMEOUT = 1000000;	// 1.0 s
 
+#define PRFX "[lpe.lidar] "
+
 void BlockLocalPositionEstimator::lidarInit()
 {
 	// measure
@@ -21,8 +23,8 @@ void BlockLocalPositionEstimator::lidarInit()
 
 	// if finished
 	if (_lidarStats.getCount() > REQ_LIDAR_INIT_COUNT) {
-		mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] lidar init: "
-					     "mean %d cm stddev %d cm",
+		mavlink_and_console_log_info(&mavlink_log_pub, PRFX "init, "
+					     "mean: %d cm, stddev: %d cm",
 					     int(100 * _lidarStats.getMean()(0)),
 					     int(100 * _lidarStats.getStdDev()(0)));
 		_sensorTimeout &= ~SENSOR_LIDAR;
@@ -102,7 +104,7 @@ void BlockLocalPositionEstimator::lidarCorrect()
 
 	if (beta > BETA_TABLE[n_y_lidar]) {
 		if (!(_sensorFault & SENSOR_LIDAR)) {
-			mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] lidar fault,  beta %5.2f", double(beta));
+			mavlink_and_console_log_info(&mavlink_log_pub, PRFX "fault, beta %5.2f", double(beta));
 			_sensorFault |= SENSOR_LIDAR;
 		}
 
@@ -111,7 +113,7 @@ void BlockLocalPositionEstimator::lidarCorrect()
 
 	} else if (_sensorFault & SENSOR_LIDAR) {
 		_sensorFault &= ~SENSOR_LIDAR;
-		mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] lidar OK");
+		mavlink_and_console_log_info(&mavlink_log_pub, PRFX "OK");
 	}
 
 	// kalman filter correction always
@@ -127,7 +129,7 @@ void BlockLocalPositionEstimator::lidarCheckTimeout()
 		if (!(_sensorTimeout & SENSOR_LIDAR)) {
 			_sensorTimeout |= SENSOR_LIDAR;
 			_lidarStats.reset();
-			mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] lidar timeout ");
+			mavlink_and_console_log_info(&mavlink_log_pub, PRFX "timeout");
 		}
 	}
 }

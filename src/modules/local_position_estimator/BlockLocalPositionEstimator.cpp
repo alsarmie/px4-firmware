@@ -443,13 +443,12 @@ void BlockLocalPositionEstimator::update()
 		}
 	}
 
-	if (_flowUpdated) {
-		if (_sensorTimeout & SENSOR_FLOW) {
-			flowInit();
+	if ((_sensorTimeout & SENSOR_FLOW) && _flowUpdated) {
+		flowInit();
+	}
 
-		} else {
-			flowCorrect();
-		}
+	if (!(_sensorTimeout & SENSOR_FLOW)) {
+		flowCorrect();
 	}
 
 	if (_visionUpdated) {
