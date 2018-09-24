@@ -981,12 +981,7 @@ MulticopterPositionControl::failsafe(vehicle_local_position_setpoint_s &setpoint
 {
 	_failsafe_land_hysteresis.set_state_and_update(true);
 
-	if (!_failsafe_land_hysteresis.get_state() && !force) {
-		// just keep current setpoint and don't do anything.
-
-
-
-	} else {
+	if (_failsafe_land_hysteresis.get_state() || force) {
 		setpoint.x = setpoint.y = setpoint.z = NAN;
 		setpoint.vx = setpoint.vy = setpoint.vz = NAN;
 		setpoint.thrust[0] = setpoint.thrust[1] = setpoint.thrust[2] = NAN;
