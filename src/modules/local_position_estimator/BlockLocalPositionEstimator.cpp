@@ -858,30 +858,30 @@ int BlockLocalPositionEstimator::getDelayPeriods(float delay, uint8_t *periods)
 #define boolstr(x) ((x) ? "true" : "false")
 #define compareargs(x, y) boolstr((x) < (y)), #x, (double)(x), (double)(y), #y
 #define sensorargs(fuse, sensors) \
-	((fuse) & FUSE_BARO)        ? (((sensors) & SENSOR_BARO)        ? "BARO " : "baro ")                      : "", \
-	((fuse) & FUSE_GPS)         ? (((sensors) & SENSOR_GPS)         ? "GPS " : "gps ")                         : "", \
-	                               ((sensors) & SENSOR_LIDAR)       ? "LIDAR " : "lidar ", \
-	((fuse) & FUSE_FLOW)        ? (((sensors) & SENSOR_FLOW)        ? "FLOW " : "flow ")                      : "", \
-	                               ((sensors) & SENSOR_SONAR)       ? "SONAR " : "sonar ", \
-	((fuse) & FUSE_VIS_POS)     ? (((sensors) & SENSOR_VISION)      ? "VISION " : "vision ")                : "", \
-	                               ((sensors) & SENSOR_MOCAP)       ? "MOCAP " : "mocap ", \
-	((fuse) & FUSE_LAND)        ? (((sensors) & SENSOR_LAND)        ? "LAND " : "land ")                      : "", \
-	((fuse) & FUSE_LAND_TARGET) ? (((sensors) & SENSOR_LAND_TARGET) ? "LAND_TARGET " : "land_target ") : ""
+	((fuse) & FUSE_BARO)        ? (((sensors) & SENSOR_BARO)        ? "+BARO "        : "-baro "       ) : "", \
+	((fuse) & FUSE_GPS)         ? (((sensors) & SENSOR_GPS)         ? "+GPS "         : "-gps "        ) : "", \
+	                              (((sensors) & SENSOR_LIDAR)       ? "+LIDAR "       : "-lidar "      )     , \
+	((fuse) & FUSE_FLOW)        ? (((sensors) & SENSOR_FLOW)        ? "+FLOW "        : "-flow "       ) : "", \
+	                              (((sensors) & SENSOR_SONAR)       ? "+SONAR "       : "-sonar "      )     , \
+	((fuse) & FUSE_VIS_POS)     ? (((sensors) & SENSOR_VISION)      ? "+VISION "      : "-vision "     ) : "", \
+	                              (((sensors) & SENSOR_MOCAP)       ? "+MOCAP "       : "-mocap "      )     , \
+	((fuse) & FUSE_LAND)        ? (((sensors) & SENSOR_LAND)        ? "+LAND "        : "-land "       ) : "", \
+	((fuse) & FUSE_LAND_TARGET) ? (((sensors) & SENSOR_LAND_TARGET) ? "+LAND_TARGET " : "-land_target ") : ""
 #define estimatorargs(estims) \
-	         ((estims) & EST_XY)  ? "XY "  : "xy ", \
-	         ((estims) & EST_VXY) ? "VXY " : "vxy ", \
-	         ((estims) & EST_Z)   ? "Z "   : "z ", \
-	         ((estims) & EST_TZ)  ? "TZ "  : "tz "
+	((estims) & EST_XY)  ? "+XY "  : "-xy ", \
+	((estims) & EST_VXY) ? "+VXY " : "-vxy ", \
+	((estims) & EST_Z)   ? "+Z "   : "-z ", \
+	((estims) & EST_TZ)  ? "+TZ "  : "-tz "
 void BlockLocalPositionEstimator::printInfo()
 {
-	float stddev_xy = sqrtf(_P(X_x, X_x) + _P(X_y, X_y));
-	float stddev_vxy = sqrtf(math::max(_P(X_vx, X_vx), _P(X_vy, X_vy)));
-	float stddev_z = sqrtf(_P(X_z, X_z));
-	float stddev_tz = sqrtf(_P(X_tz, X_tz));
-	PX4_INFO("xy_stddev_ok: %s. %s = %5.2f < %5.2f = %s", compareargs(stddev_xy, _xy_pub_thresh.get()));
-	PX4_INFO("vxy_stddev_ok: %s. %s = %5.2f < %5.2f = %s", compareargs(stddev_vxy, _vxy_pub_thresh.get()));
-	PX4_INFO("z_stddev_ok:   %s. %s = %5.2f < %5.2f = %s", compareargs(stddev_z, _z_pub_thresh.get()));
-	PX4_INFO("tz_stddev_ok:  %s. %s = %5.2f < %5.2f = %s", compareargs(stddev_tz, _z_pub_thresh.get()));
+	float stddev_xy  = sqrtf((_P(X_x, X_x) + _P(X_y, X_y))/2.0f);
+	float stddev_vxy = sqrtf((_P(X_vx, X_vx) + _P(X_vy, X_vy))/2.0f);
+	float stddev_z   = sqrtf(_P(X_z, X_z));
+	float stddev_tz  = sqrtf(_P(X_tz, X_tz));
+	PX4_INFO("xy_stddev_ok:  %5s. %10s = %5.2f < %-5.2f = %s", compareargs(stddev_xy,  _xy_pub_thresh.get()));
+	PX4_INFO("vxy_stddev_ok: %5s. %10s = %5.2f < %-5.2f = %s", compareargs(stddev_vxy, _vxy_pub_thresh.get()));
+	PX4_INFO("z_stddev_ok:   %5s. %10s = %5.2f < %-5.2f = %s", compareargs(stddev_z,   _z_pub_thresh.get()));
+	PX4_INFO("tz_stddev_ok:  %5s. %10s = %5.2f < %-5.2f = %s", compareargs(stddev_tz,  _z_pub_thresh.get()));
 	PX4_INFO("estimators initialized: %s%s%s%s", estimatorargs(_estimatorInitialized));
 	int fuse = _fusion.get();
 	PX4_INFO("sensor faults:   %s%s%s%s%s%s%s%s%s", sensorargs(fuse, _sensorFault));
