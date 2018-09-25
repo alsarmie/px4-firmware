@@ -92,6 +92,7 @@ set(config_module_list
 	modules/local_position_estimator
 	modules/position_estimator_inav
 	modules/wind_estimator
+	modules/fake_mocap
 
 	#
 	# Vehicle Control
