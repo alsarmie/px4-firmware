@@ -30,9 +30,9 @@ void BlockLocalPositionEstimator::flowInit()
 	// if finished
 	if (_flowQStats.getCount() > REQ_FLOW_INIT_COUNT) {
 		mavlink_and_console_log_info(&mavlink_log_pub, PRFX "init, "
-					     "quality: %d, std: %d",
-					     int(_flowQStats.getMean()(0)),
-					     int(_flowQStats.getStdDev()(0)));
+		                             "quality: %d, std: %d",
+		                             int(_flowQStats.getMean()(0)),
+		                             int(_flowQStats.getStdDev()(0)));
 		_sensorTimeout &= ~SENSOR_FLOW;
 		_sensorFault &= ~SENSOR_FLOW;
 	}
@@ -45,25 +45,25 @@ int BlockLocalPositionEstimator::flowMeasure(Vector<float, n_y_flow> &y)
 #if 0
 	// check for sane pitch/roll
 	if (_eul(0) > 0.5f || _eul(1) > 0.5f) {
-        if (RATE_LIMIT(5.0f, _time_warn_flow)) {
+		if (RATE_LIMIT(5.0f, _time_warn_flow)) {
 			mavlink_and_console_log_info(&mavlink_log_pub, PRFX "attitude too far from level");
-        }
+		}
 		return -1;
 	}
 
 	// check quality
 	if (qual < _flow_min_q.get()) {
-        if (RATE_LIMIT(5.0f, _time_warn_flow)) {
+		if (RATE_LIMIT(5.0f, _time_warn_flow)) {
 			mavlink_and_console_log_info(&mavlink_log_pub, PRFX "flow quality below threshold");
-        }
+		}
 		return -1;
-    }
+	}
 
 	// check for agl
 	if (agl() < flow_min_agl) {
-        if (RATE_LIMIT(5.0f, _time_warn_flow)) {
+		if (RATE_LIMIT(5.0f, _time_warn_flow)) {
 			mavlink_and_console_log_info(&mavlink_log_pub, PRFX "agl too low");
-        }
+		}
 		return -1;
 	}
 #endif
@@ -71,9 +71,9 @@ int BlockLocalPositionEstimator::flowMeasure(Vector<float, n_y_flow> &y)
 #if 0
 	// calculate range to center of image for flow
 	if (!(_estimatorInitialized & EST_TZ)) {
-        if (RATE_LIMIT(5.0f, _time_warn_flow)) {
+		if (RATE_LIMIT(5.0f, _time_warn_flow)) {
 			mavlink_and_console_log_info(&mavlink_log_pub, PRFX "terrain height not known, cannot determine AGL");
-        }
+		}
 		return -1;
 	}
 #endif
@@ -92,10 +92,15 @@ int BlockLocalPositionEstimator::flowMeasure(Vector<float, n_y_flow> &y)
 	}
 
 	if (_fusion.get() & FUSE_FLOW_GYRO_COMP) {
+#define LPE_FLOW_GYRO_MAIN
+#ifdef LPE_FLOW_GYRO_MAIN
+		flow_x_rad -= _sub_sensor.get().gyro_rad[0]*dt_flow;
+		flow_y_rad -= _sub_sensor.get().gyro_rad[1]*dt_flow;
+#else
 		flow_x_rad -= _flow_gyro_x_high_pass.update(_sub_flow.get().gyro_x_rate_integral);
 		flow_y_rad -= _flow_gyro_y_high_pass.update(_sub_flow.get().gyro_y_rate_integral);
+#endif
 	}
-
 	//warnx("flow x: %10.4f y: %10.4f gyro_x: %10.4f gyro_y: %10.4f d: %10.4f",
 	//double(flow_x_rad), double(flow_y_rad), double(gyro_x_rad), double(gyro_y_rad), double(d));
 
@@ -173,16 +178,16 @@ void BlockLocalPositionEstimator::flowCorrect()
 
 	if (!(_sensorFault & SENSOR_FLOW)) {
 		Matrix<float, n_x, n_y_flow> K = _P * C.transpose() * S_I;
-		//Vector<float, n_x> dx = K * r;
-		//_x += dx;
-		_x += C.transpose() * r;
+		Vector<float, n_x> dx = K * r;
+		//Vector<float, n_x> dx = C.transpose() * r;
+		_x += dx;
 		_P -= K * C * _P;
 	}
 
 #if 0
 	_sensorFault &= ~SENSOR_FLOW;
-    _x(X_vx) = y(Y_flow_vx);
-    _x(X_vy) = y(Y_flow_vy);
+	_x(X_vx) = y(Y_flow_vx);
+	_x(X_vy) = y(Y_flow_vy);
 #endif
 }
 

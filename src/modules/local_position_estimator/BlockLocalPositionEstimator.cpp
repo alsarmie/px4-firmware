@@ -272,11 +272,15 @@ void BlockLocalPositionEstimator::update()
 
 	// is xy valid?
 	float xy_stddev = sqrtf(math::max(_P(X_x, X_x), _P(X_y, X_y)));
-	bool xy_stddev_ok =  xy_stddev < _xy_pub_thresh.get();
+	bool xy_stddev_ok = xy_stddev < _xy_pub_thresh.get();
 
-	if (!xy_stddev_ok && (_estimatorInitialized & EST_XY)) {
+	if (!xy_stddev_ok) {
 		_estimatorInitialized &= ~EST_XY;
 	} else if (xy_stddev_ok && (~_sensorTimeout & SENSOR_XY_MASK)) {
+		_estimatorInitialized |= EST_XY;
+	}
+
+	if (_xy_pub_thresh.get() <= 1e-7f) {
 		_estimatorInitialized |= EST_XY;
 	}
 
@@ -284,7 +288,7 @@ void BlockLocalPositionEstimator::update()
 	float vxy_stddev = sqrtf(math::max(_P(X_vx, X_vx), _P(X_vy, X_vy)));
 	bool vxy_stddev_ok =  vxy_stddev < _vxy_pub_thresh.get();
 
-	if (!vxy_stddev_ok && (_estimatorInitialized & EST_VXY)) {
+	if (!vxy_stddev_ok) {
 		_estimatorInitialized &= ~EST_VXY;
 	} else if (vxy_stddev_ok && (~_sensorTimeout & SENSOR_VXY_MASK)) {
 		_estimatorInitialized |= EST_VXY;
@@ -293,9 +297,9 @@ void BlockLocalPositionEstimator::update()
 	// is z valid?
 	bool z_stddev_ok = sqrtf(_P(X_z, X_z)) < _z_pub_thresh.get();
 
-	if (!z_stddev_ok && (_estimatorInitialized & EST_Z)) {
+	if (!z_stddev_ok) {
 		_estimatorInitialized &= ~EST_Z;
-	} else if (z_stddev_ok) {
+	} else {
 		_estimatorInitialized |= EST_Z;
 	}
 
@@ -421,12 +425,14 @@ void BlockLocalPositionEstimator::update()
 		}
 	}
 
-	if ((_sensorTimeout & SENSOR_FLOW) && _flowUpdated) {
-		flowInit();
-	}
+	if (_flowUpdated) {
+		if ((_sensorTimeout & SENSOR_FLOW) && _flowUpdated) {
+			flowInit();
+		}
 
-	if (!(_sensorTimeout & SENSOR_FLOW)) {
-		flowCorrect();
+		if (!(_sensorTimeout & SENSOR_FLOW)) {
+			flowCorrect();
+		}
 	}
 
 	if (_visionUpdated) {
@@ -546,13 +552,8 @@ void BlockLocalPositionEstimator::publishLocalPos()
 		_pub_lpos.get().v_z_valid = _estimatorInitialized & EST_Z;
 		_pub_lpos.get().x = xLP(X_x);	// north
 		_pub_lpos.get().y = xLP(X_y);	// east
-
-		if (_fusion.get() & FUSE_PUB_AGL_Z) {
-			_pub_lpos.get().z = -_aglLowPass.getState();	// agl
-
-		} else {
-			_pub_lpos.get().z = xLP(X_z);	// down
-		}
+		_pub_lpos.get().z = (_fusion.get() & FUSE_PUB_AGL_Z) ? -_aglLowPass.getState()
+		                                                     : xLP(X_z);
 
 		_pub_lpos.get().vx = xLP(X_vx);	// north
 		_pub_lpos.get().vy = xLP(X_vy);	// east
@@ -856,7 +857,9 @@ int BlockLocalPositionEstimator::getDelayPeriods(float delay, uint8_t *periods)
 }
 
 #define boolstr(x) ((x) ? "true" : "false")
+
 #define compareargs(x, y) boolstr((x) < (y)), #x, (double)(x), (double)(y), #y
+
 #define sensorargs(fuse, sensors) \
 	((fuse) & FUSE_BARO)        ? (((sensors) & SENSOR_BARO)        ? "+BARO "        : "-baro "       ) : "", \
 	((fuse) & FUSE_GPS)         ? (((sensors) & SENSOR_GPS)         ? "+GPS "         : "-gps "        ) : "", \
@@ -867,15 +870,17 @@ int BlockLocalPositionEstimator::getDelayPeriods(float delay, uint8_t *periods)
 	                              (((sensors) & SENSOR_MOCAP)       ? "+MOCAP "       : "-mocap "      )     , \
 	((fuse) & FUSE_LAND)        ? (((sensors) & SENSOR_LAND)        ? "+LAND "        : "-land "       ) : "", \
 	((fuse) & FUSE_LAND_TARGET) ? (((sensors) & SENSOR_LAND_TARGET) ? "+LAND_TARGET " : "-land_target ") : ""
+
 #define estimatorargs(estims) \
-	((estims) & EST_XY)  ? "+XY "  : "-xy ", \
+	((estims) & EST_XY)  ? "+XY "  : "-xy ",  \
 	((estims) & EST_VXY) ? "+VXY " : "-vxy ", \
-	((estims) & EST_Z)   ? "+Z "   : "-z ", \
+	((estims) & EST_Z)   ? "+Z "   : "-z ",   \
 	((estims) & EST_TZ)  ? "+TZ "  : "-tz "
+
 void BlockLocalPositionEstimator::printInfo()
 {
-	float stddev_xy  = sqrtf((_P(X_x, X_x) + _P(X_y, X_y))/2.0f);
-	float stddev_vxy = sqrtf((_P(X_vx, X_vx) + _P(X_vy, X_vy))/2.0f);
+	float stddev_xy  = sqrtf(math::max(_P(X_x, X_x), _P(X_y, X_y)));;
+	float stddev_vxy = sqrtf(math::max(_P(X_vx, X_vx), _P(X_vy, X_vy)));;
 	float stddev_z   = sqrtf(_P(X_z, X_z));
 	float stddev_tz  = sqrtf(_P(X_tz, X_tz));
 	PX4_INFO("xy_stddev_ok:  %5s. %10s = %5.2f < %-5.2f = %s", compareargs(stddev_xy,  _xy_pub_thresh.get()));

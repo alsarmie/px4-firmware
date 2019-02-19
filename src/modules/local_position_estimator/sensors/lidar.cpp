@@ -102,7 +102,6 @@ void BlockLocalPositionEstimator::lidarCorrect()
 	// residual covariance, (inverse)
 	Matrix<float, n_y_lidar, n_y_lidar> S_I = inv<float, n_y_lidar>(S);
 
-#if 0
 	// fault detection
 	float beta = (r.transpose() * (S_I * r))(0, 0);
 
@@ -119,7 +118,6 @@ void BlockLocalPositionEstimator::lidarCorrect()
 		_sensorFault &= ~SENSOR_LIDAR;
 		mavlink_and_console_log_info(&mavlink_log_pub, PRFX "OK");
 	}
-#endif
 
 	// kalman filter correction always
 	Matrix<float, n_x, n_y_lidar> K = _P * C.transpose() * S_I;

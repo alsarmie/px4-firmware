@@ -17,6 +17,7 @@
 #include <uORB/topics/vehicle_attitude_setpoint.h>
 #include <uORB/topics/optical_flow.h>
 #include <uORB/topics/sensor_combined.h>
+#include <uORB/topics/sensor_gyro.h>
 #include <uORB/topics/distance_sensor.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/manual_control_setpoint.h>
@@ -155,9 +156,9 @@ public:
 
 	enum estimate_t {
 		EST_XY = 1 << 0,
-		EST_VXY = 1 << 0,
-		EST_Z = 1 << 1,
-		EST_TZ = 1 << 2,
+		EST_VXY = 1 << 1,
+		EST_Z = 1 << 2,
+		EST_TZ = 1 << 3,
 	};
 
 	// public methods
