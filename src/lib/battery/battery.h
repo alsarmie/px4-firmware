@@ -104,7 +104,9 @@ private:
 		(ParamFloat<px4::params::BAT_R_INTERNAL>) _r_internal,
 		(ParamFloat<px4::params::BAT_LOW_THR>) _low_thr,
 		(ParamFloat<px4::params::BAT_CRIT_THR>) _crit_thr,
-		(ParamFloat<px4::params::BAT_EMERGEN_THR>) _emergency_thr
+		(ParamFloat<px4::params::BAT_EMERGEN_THR>) _emergency_thr,
+		(ParamInt<px4::params::BAT_STICKY_WARN>) _sticky_warning,
+		(ParamFloat<px4::params::BAT_SETTLE_TIME>) _settling_time
 	)
 
 	bool _battery_initialized = false;
@@ -118,4 +120,5 @@ private:
 	float _scale = 1.f;
 	uint8_t _warning;
 	hrt_abstime _last_timestamp;
+	hrt_abstime _connect_timestamp;
 };
