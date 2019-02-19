@@ -84,9 +84,24 @@ void FlightTaskManualAltitude::_scaleSticks()
 	// reuse same scaling as for stabilized
 	FlightTaskManualStabilized::_scaleSticks();
 
-	// scale horizontal velocity with expo curve stick input
-	const float vel_max_z = (_sticks(2) > 0.0f) ? _constraints.speed_down : _constraints.speed_up;
-	_velocity_setpoint(2) = vel_max_z * _sticks_expo(2);
+	if (MPC_Z_THRUST.get() > FLT_EPSILON) {
+		/* Scale stick z from [-1,1] to [min thrust, max thrust]
+		 * with hover throttle at 0.5 stick */
+		float throttle = -((_sticks(2) - 1.0f) * 0.5f);
+		if (throttle > stickDeadzone()) {
+			// scale height with stick input
+			_position_setpoint(2) = -MPC_Z_THRUST.get() * throttle;
+			_velocity_setpoint(2) = 0.0;
+		} else {
+			_position_setpoint(2) = NAN;
+			_velocity_setpoint(2) = MPC_LAND_SPEED.get();
+		}
+	} else {
+		// scale horizontal velocity with expo curve stick input
+		const float vel_max_z = (_sticks(2) > 0.0f) ? _constraints.speed_down : _constraints.speed_up;
+		_position_setpoint(2) = NAN;
+		_velocity_setpoint(2) = vel_max_z * _sticks_expo(2);
+	}
 }
 
 void FlightTaskManualAltitude::_updateAltitudeLock()

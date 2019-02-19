@@ -170,6 +170,16 @@ PARAM_DEFINE_FLOAT(MPC_Z_VEL_D, 0.0f);
 PARAM_DEFINE_FLOAT(MPC_Z_VEL_MAX_UP, 3.0f);
 
 /**
+ * Map thrust to Z position
+ *
+ * @unit m
+ * @min 0.0
+ * @decimal 2
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MPC_Z_THRUST, 0.0f);
+
+/**
  * Maximum vertical descent velocity
  *
  * Maximum vertical velocity in AUTO mode and endpoint for stabilized modes (ALTCTRL, POSCTRL).
