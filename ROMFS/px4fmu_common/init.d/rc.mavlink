@@ -220,6 +220,10 @@ then
 	then
 		mavlink start -d ${MAVLINK_COMPANION_DEVICE} -b 921600 -r 20000
 	fi
+	if param compare SYS_COMPANION 2921600
+	then
+		mavlink start -d ${MAVLINK_COMPANION_DEVICE} -b 921600 -m onboard -r 80000 -x -f -z
+	fi
 
 	#
 	# 1500000 Baud Rate.
