@@ -45,7 +45,7 @@ using namespace time_literals;
 Error FlightTaskManual::initializeSubscriptions(SubscriptionArray &subscription_array)
 {
     auto error = FlightTask::initializeSubscriptions(subscription_array);
-	if (error) {
+	if (!error.ok()) {
 		return error;
 	}
 
@@ -61,7 +61,7 @@ Error FlightTaskManual::updateInitialize()
 	auto error = FlightTask::updateInitialize();
 	const bool sticks_available = _evaluateSticks();
 
-	if (!error && _sticks_data_required && !sticks_available) {
+	if (error.ok() && _sticks_data_required && !sticks_available) {
 		error = "sticks required but not available";
 	}
 

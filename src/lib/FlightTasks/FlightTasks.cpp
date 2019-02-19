@@ -25,10 +25,10 @@ Error FlightTasks::update()
     }
 
 	_subscription_array.update();
-	if ((error = _current_task.task->updateInitialize())) {
+	if (!(error = _current_task.task->updateInitialize()).ok()) {
         return error;
     }
-    if ((error = _current_task.task->update())) {
+    if (!(error = _current_task.task->update()).ok()) {
         return error;
 	}
 
@@ -90,7 +90,8 @@ Error FlightTasks::switchTask(FlightTaskIndex new_task_index)
 	}
 
 	// subscription failed
-	if ((error = _current_task.task->initializeSubscriptions(_subscription_array))) {
+	error = _current_task.task->initializeSubscriptions(_subscription_array);
+	if (!error.ok()) {
 		_current_task.task->~FlightTask();
 		_current_task.task = nullptr;
 		_current_task.index = FlightTaskIndex::None;
@@ -100,7 +101,8 @@ Error FlightTasks::switchTask(FlightTaskIndex new_task_index)
 	_subscription_array.forcedUpdate(); // make sure data is available for all new subscriptions
 
 	// update initialize failed
-	if ((error = _current_task.task->updateInitialize())) {
+	error = _current_task.task->updateInitialize();
+	if (!error.ok()) {
 		_current_task.task->~FlightTask();
 		_current_task.task = nullptr;
 		_current_task.index = FlightTaskIndex::None;
@@ -108,7 +110,8 @@ Error FlightTasks::switchTask(FlightTaskIndex new_task_index)
 	}
 
 	// activation failed
-	if ((error = _current_task.task->activate())) {
+	error = _current_task.task->activate();
+	if (!error.ok()) {
 		_current_task.task->~FlightTask();
 		_current_task.task = nullptr;
 		_current_task.index = FlightTaskIndex::None;
@@ -140,8 +143,8 @@ void FlightTasks::handleParameterUpdate()
 const char *FlightTasks::errorToString(const int error)
 {
 	for (auto e : _errors) {
-		if (e.num == error) {
-			return e.msg;
+		if (e.num() == error) {
+			return e.msg();
 		}
 	}
 
@@ -176,19 +179,19 @@ void FlightTasks::_updateCommand()
 	}
 
 	// switch to the commanded task
-	int switch_result = switchTask(desired_task);
+	Error switch_result = switchTask(desired_task);
 	uint8_t cmd_result = vehicle_command_ack_s::VEHICLE_RESULT_FAILED;
 
 	// if we are in/switched to the desired task
-	if (switch_result >= 0) {
+	if (!switch_result.ok()) {
 		cmd_result = vehicle_command_ack_s::VEHICLE_RESULT_ACCEPTED;
 
 		// if the task is running apply parameters to it and see if it rejects
-		if (isAnyTaskActive() && !_current_task.task->applyCommandParameters(command)) {
+		if (isAnyTaskActive() && !_current_task.task->applyCommandParameters(command).ok()) {
 			cmd_result = vehicle_command_ack_s::VEHICLE_RESULT_DENIED;
 
 			// if we just switched and parameters are not accepted, go to failsafe
-			if (switch_result == 1) {
+			if (switch_result.num() == 1) {
 				switchTask(FlightTaskIndex::ManualPosition);
 				cmd_result = vehicle_command_ack_s::VEHICLE_RESULT_FAILED;
 			}
@@ -199,7 +202,7 @@ void FlightTasks::_updateCommand()
 	vehicle_command_ack_s command_ack = {};
 	command_ack.command = command.command;
 	command_ack.result = cmd_result;
-	command_ack.result_param1 = switch_result;
+	command_ack.result_param1 = switch_result.num();
 	command_ack.target_system = command.source_system;
 	command_ack.target_component = command.source_component;
 

@@ -55,13 +55,17 @@ Error FlightTaskOrbit::applyCommandParameters(const vehicle_command_s &command)
 	if (PX4_ISFINITE(command.param1)) {
 		clockwise = command.param1 > 0;
 		const float r = fabsf(command.param1);
-		ret = ret && setRadius(r);
+		if (ret.ok()) {
+			ret = setRadius(r);
+		}
 	}
 
 	// commanded velocity, take sign of radius as rotation direction
 	if (PX4_ISFINITE(command.param2)) {
 		const float v = command.param2 * (clockwise ? 1.f : -1.f);
-		ret = ret && setVelocity(v);
+		if (ret.ok()) {
+			ret = setVelocity(v);
+		}
 	}
 
 	// TODO: apply x,y / z independently in geo library
@@ -78,8 +82,7 @@ Error FlightTaskOrbit::applyCommandParameters(const vehicle_command_s &command)
 	if (PX4_ISFINITE(command.param5) && PX4_ISFINITE(command.param6) && PX4_ISFINITE(command.param7)) {
 		if (globallocalconverter_tolocal(command.param5, command.param6, command.param7, &_center(0), &_center(1),
 						 &_position_setpoint(2))) {
-			// global to local conversion failed
-			ret = false;
+			ret = "global to local conversion failed";
 		}
 	}
 
@@ -126,7 +129,7 @@ Error FlightTaskOrbit::activate()
 	_center(0) -= _r;
 
 	// need a valid position and velocity
-	if (!error && (!PX4_ISFINITE(_position(0))
+	if (error.ok() && (!PX4_ISFINITE(_position(0))
 	      && PX4_ISFINITE(_position(1))
 	      && PX4_ISFINITE(_position(2))
 	      && PX4_ISFINITE(_velocity(0))

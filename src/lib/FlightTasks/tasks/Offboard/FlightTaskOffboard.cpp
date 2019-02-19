@@ -41,12 +41,13 @@ using namespace matrix;
 
 Error FlightTaskOffboard::initializeSubscriptions(SubscriptionArray &subscription_array)
 {
-	if (!FlightTask::initializeSubscriptions(subscription_array)) {
-		return false;
+    auto error = FlightTask::initializeSubscriptions(subscription_array);
+	if (!error.ok()) {
+		return error;
 	}
 
 	if (!subscription_array.get(ORB_ID(position_setpoint_triplet), _sub_triplet_setpoint)) {
-		return false;
+		return "failed to get position_setpoint_triplet sub";
 	}
 
 	return true;
@@ -56,11 +57,11 @@ Error FlightTaskOffboard::updateInitialize()
 {
 	Error error = FlightTask::updateInitialize();
 	// require a valid triplet
-	if (!error && !_sub_triplet_setpoint->get().current.valid) {
-		error = "setpoint triplet is not valid";
+	if (error.ok() && !_sub_triplet_setpoint->get().current.valid) {
+		error = "current setpoint is not valid";
 	}
 	// require valid position / velocity in xy
-	if (!error && (!PX4_ISFINITE(_position(0))
+	if (error.ok() && (!PX4_ISFINITE(_position(0))
 	       && PX4_ISFINITE(_position(1))
 	       && PX4_ISFINITE(_velocity(0))
 	       && PX4_ISFINITE(_velocity(1)))) {
@@ -83,7 +84,7 @@ Error FlightTaskOffboard::update()
 	if (!_sub_triplet_setpoint->get().current.valid) {
 		_resetSetpoints();
 		_position_setpoint = _position;
-		return false;
+		return "current setpoint is not valid";
 	}
 
 	// reset setpoint for every loop
@@ -189,12 +190,12 @@ Error FlightTaskOffboard::update()
 
 	// if nothing is valid in xy, then exit offboard
 	if (!(position_ctrl_xy || velocity_ctrl_xy || acceleration_ctrl)) {
-		return false;
+		return "neither xy position, velocity or acceleration control given";
 	}
 
 	// if nothing is valid in z, then exit offboard
 	if (!(position_ctrl_z || velocity_ctrl_z || acceleration_ctrl)) {
-		return false;
+		return "neither z position, velocity or acceleration control given";
 	}
 
 	// XY-direction
@@ -225,7 +226,7 @@ Error FlightTaskOffboard::update()
 
 		} else {
 			// no valid frame
-			return false;
+			return "setpoint frame invalid";
 		}
 	}
 

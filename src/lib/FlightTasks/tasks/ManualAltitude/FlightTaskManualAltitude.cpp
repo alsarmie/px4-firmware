@@ -45,9 +45,9 @@ Error FlightTaskManualAltitude::updateInitialize()
 {
 	Error error = FlightTaskManualStabilized::updateInitialize();
 	// in addition to stabilized require valid position and velocity in D-direction
-    if (!error && !(PX4_ISFINITE(_position(2)) && PX4_ISFINITE(_velocity(2)))) {
-        error = "z position or velocity not finite";
-    }
+	if (error.ok() && !(PX4_ISFINITE(_position(2)) && PX4_ISFINITE(_velocity(2)))) {
+		error = "z position or velocity not finite";
+	}
 	return error;
 }
 

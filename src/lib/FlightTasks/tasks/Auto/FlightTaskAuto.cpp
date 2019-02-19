@@ -45,7 +45,7 @@ static constexpr float SIGMA_NORM	= 0.001f;
 Error FlightTaskAuto::initializeSubscriptions(SubscriptionArray &subscription_array)
 {
 	Error error;
-	if ((error = FlightTask::initializeSubscriptions(subscription_array))) {
+	if (!(error = FlightTask::initializeSubscriptions(subscription_array)).ok()) {
 		return error;
 	}
 
@@ -75,14 +75,14 @@ Error FlightTaskAuto::updateInitialize()
 {
 	auto error = FlightTask::updateInitialize();
 	// require valid reference and valid target
-	if (!error && !_evaluateGlobalReference()) {
+	if (error.ok() && !_evaluateGlobalReference()) {
 		error = "global reference failed evaluation";
 	}
-	if (!error && !_evaluateTriplets()) {
+	if (error.ok() && !_evaluateTriplets()) {
 		error = "setpoint triplet failed evaluation";
 	}
 	// require valid position
-	if (!error && !(PX4_ISFINITE(_position(0))
+	if (error.ok() && !(PX4_ISFINITE(_position(0))
 	      && PX4_ISFINITE(_position(1))
 	      && PX4_ISFINITE(_position(2))
 	      && PX4_ISFINITE(_velocity(0))

@@ -44,7 +44,7 @@ using namespace matrix;
 Error FlightTaskManualStabilized::activate()
 {
 	auto error = FlightTaskManual::activate();
-	if (error) {
+	if (!error.ok()) {
 		return error;
 	}
 	_thrust_setpoint = matrix::Vector3f(0.0f, 0.0f, -_throttle_hover.get());
@@ -57,7 +57,7 @@ Error FlightTaskManualStabilized::activate()
 Error FlightTaskManualStabilized::updateInitialize()
 {
 	auto error = FlightTaskManual::updateInitialize();
-	if (error) {
+	if (!error.ok()) {
 		return error;
 	}
 	// need a valid yaw-state

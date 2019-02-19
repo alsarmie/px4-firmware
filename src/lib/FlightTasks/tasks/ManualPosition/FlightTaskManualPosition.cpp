@@ -45,7 +45,7 @@ Error FlightTaskManualPosition::updateInitialize()
 {
 	Error error = FlightTaskManualAltitude::updateInitialize();
 	// require valid position / velocity in xy
-	if (!error && !(PX4_ISFINITE(_position(0))
+	if (error.ok() && !(PX4_ISFINITE(_position(0))
 	       && PX4_ISFINITE(_position(1))
 	       && PX4_ISFINITE(_velocity(0))
 	       && PX4_ISFINITE(_velocity(1)))) {
