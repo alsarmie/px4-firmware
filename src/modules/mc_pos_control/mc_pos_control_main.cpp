@@ -369,6 +369,11 @@ MulticopterPositionControl::parameters_update(bool force)
 		_tko_speed.set(math::min(_tko_speed.get(), _vel_max_up.get()));
 		_land_speed.set(math::min(_land_speed.get(), _vel_max_down.get()));
 
+		if (_tko_speed.get() > _vel_max_up.get()) {
+			PX4_WARN("Cannot do take-off with position hold when "
+			         "MPC_TKO_SPEED is higher than MPC_Z_VEL_MAX_UP.");
+		}
+
 		// set trigger time for arm hysteresis
 		_arm_hysteresis.set_hysteresis_time_from(false, (int)(MPC_IDLE_TKO.get() * 1000000.0f));
 	}
