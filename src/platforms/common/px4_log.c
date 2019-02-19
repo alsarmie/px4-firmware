@@ -43,14 +43,17 @@
 
 #include <uORB/uORB.h>
 #include <uORB/topics/log_message.h>
+#include <uORB/topics/mavlink_log.h>
 #include <drivers/drv_hrt.h>
 
 static orb_advert_t orb_log_message_pub = NULL;
+static orb_advert_t mavlink_log_pub = NULL;
 
 __EXPORT const char *__px4_log_level_str[_PX4_LOG_LEVEL_PANIC + 1] = { "DEBUG", "INFO", "WARN", "ERROR", "PANIC" };
 __EXPORT const char *__px4_log_level_color[_PX4_LOG_LEVEL_PANIC + 1] =
 { PX4_ANSI_COLOR_GREEN, PX4_ANSI_COLOR_RESET, PX4_ANSI_COLOR_YELLOW, PX4_ANSI_COLOR_RED, PX4_ANSI_COLOR_RED };
 
+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
 void px4_log_initialize(void)
 {
@@ -69,6 +72,9 @@ void px4_log_initialize(void)
 	if (!orb_log_message_pub) {
 		PX4_ERR("failed to advertise log_message");
 	}
+
+	struct mavlink_log_s mavlink_log;
+	mavlink_log_pub = orb_advertise_queue(ORB_ID(mavlink_log), &mavlink_log, 4);
 }
 
 void px4_backtrace()
@@ -168,7 +174,7 @@ __EXPORT void px4_log_modulename(int level, const char *moduleName, const char *
 #endif
 
 	/* publish an orb log message */
-	if (level >= _PX4_LOG_LEVEL_WARN && orb_log_message_pub) { //only publish important messages
+	if (level >= _PX4_LOG_LEVEL_INFO && orb_log_message_pub) { //only publish important messages
 
 		struct log_message_s log_message;
 		const unsigned max_length_pub = sizeof(log_message.text);
@@ -196,6 +202,19 @@ __EXPORT void px4_log_modulename(int level, const char *moduleName, const char *
 #if !defined(PARAM_NO_ORB)
 		orb_publish(ORB_ID(log_message), orb_log_message_pub, &log_message);
 #endif /* !PARAM_NO_ORB */
+
+		struct mavlink_log_s mavlink_log = {
+			.timestamp = log_message.timestamp,
+			.severity  = log_message.severity,
+		};
+		int start = 0, stop = strnlen((char *)log_message.text, max_length_pub);
+		do {
+			int ncopy = MIN(sizeof(mavlink_log.text) - 1, (unsigned)(stop - start));
+			memset(mavlink_log.text, 0, sizeof(mavlink_log.text));
+			memcpy(mavlink_log.text, log_message.text + start, ncopy);
+			orb_publish(ORB_ID(mavlink_log), mavlink_log_pub, &mavlink_log);
+			start += ncopy;
+		} while (start < stop);
 	}
 }
 
