@@ -46,9 +46,12 @@ int BlockLocalPositionEstimator::lidarMeasure(Vector<float, n_y_lidar> &y)
 	}
 
 	// check for bad data
-	if (d > max_dist || d < min_dist) {
+	if (d > max_dist) {
 		return -1;
 	}
+
+	// if lidar measures less than min_dist, assume z = 0.
+	d = (d > min_dist) ? d : 0.0;
 
 	// update stats
 	_lidarStats.update(Scalarf(d));
