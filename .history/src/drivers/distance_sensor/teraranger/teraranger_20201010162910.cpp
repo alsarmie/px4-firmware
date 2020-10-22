@@ -290,7 +290,7 @@ TERARANGER::init()
 				goto out;
 
 			} else {
-				_min_distance = TERARANGER_EVO_3M_MIN_DISTANCE; //TREVO_60M_MIN_DISTANCE;
+				_min_distance = TREVO_60M_MIN_DISTANCE;
 				_max_distance = TREVO_60M_MAX_DISTANCE;
 			}
 
