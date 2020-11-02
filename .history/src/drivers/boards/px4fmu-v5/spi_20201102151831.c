@@ -75,9 +75,9 @@ static const uint32_t spi3selects_gpio[] = {FIXME};
 #error Need to define SPI3 Usage
 #endif
 static const uint32_t spi4selects_gpio[] = PX4_BARO_BUS_CS_GPIO;
-#ifdef CONFIG_STM32F7_SPI5
+//#ifdef CONFIG_STM32F7_SPI5
 static const uint32_t spi5selects_gpio[] = PX4_EXTERNAL1_BUS_CS_GPIO;
-#endif
+//#endif
 static const uint32_t spi6selects_gpio[] = PX4_EXTERNAL2_BUS_CS_GPIO;
 
 
@@ -387,7 +387,11 @@ __EXPORT void stm32_spi5select(FAR struct spi_dev_s *dev, uint32_t devid, bool s
 	/* SPI select is active low, so write !selected to select the device */
 
 	int sel = (int) devid;
-
+	printf("Failure here sel! %u\n",sel);
+	//sel = 1280;
+	printf("Failure here sel2! %u\n",sel);
+	printf("Failure here busid! %u\n",PX4_SPI_BUS_ID(sel));
+	printf("Failure here bus external! %u\n",PX4_SPI_BUS_EXTERNAL1);
 	ASSERT(PX4_SPI_BUS_ID(sel) == PX4_SPI_BUS_EXTERNAL1);
 
 	/* Making sure the other peripherals are not selected */

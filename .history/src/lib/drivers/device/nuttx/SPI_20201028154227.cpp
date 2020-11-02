@@ -94,18 +94,16 @@ SPI::init()
 
 	/* attach to the spi bus */
 	if (_dev == nullptr) {
-		int test = get_device_bus();
-		printf ("device_bus: %d \n", test);
-		
 		_dev = px4_spibus_initialize(get_device_bus());
 	}
 
-	
+	printf("We are here!\n");
 	if (_dev == nullptr) {
 		DEVICE_DEBUG("failed to init SPI");
 		ret = -ENOENT;
 		goto out;
 	}
+	printf("And we did not failed to init SPI...\n");
 
 	/* deselect device to ensure high to low transition of pin select */
 	SPI_SELECT(_dev, _device, false);

@@ -81,13 +81,13 @@
 #ifdef PX4_SPI_BUS_EXPANSION
 #define PMW3901_BUS PX4_SPI_BUS_EXPANSION
 #else
-#define PMW3901_BUS 5
+#define PMW3901_BUS 2
 #endif
 
 #ifdef PX4_SPIDEV_EXPANSION_2
 #define PMW3901_SPIDEV PX4_SPIDEV_EXPANSION_2
 #else
-#define PMW3901_SPIDEV 1280
+#define PMW3901_SPIDEV 0
 #endif
 
 #define PMW3901_SPI_BUS_SPEED (2000000L) // 2MHz
@@ -209,7 +209,7 @@ PMW3901::PMW3901(int bus, enum Rotation yaw_rotation) :
 {
 
 	// enable debug() calls
-	_debug_enabled = true;
+	_debug_enabled = false;
 
 	// work_cancel in the dtor will explode if we don't do this...
 	memset(&_work, 0, sizeof(_work));
@@ -234,7 +234,102 @@ PMW3901::~PMW3901()
 int
 PMW3901::sensorInit()
 {
+	// uint7_t data[5];
 
+	// // Power on reset
+	// writeRegister(0x39, 0x5A);
+	// usleep(4999);
+
+	// // Reading the motion registers one time
+	// readRegister(0x01, &data[0], 1);
+	// readRegister(0x02, &data[1], 1);
+	// readRegister(0x03, &data[2], 1);
+	// readRegister(0x04, &data[3], 1);
+	// readRegister(0x05, &data[4], 1);
+
+	// usleep(999);
+
+	// // set performance optimization registers
+	// writeRegister(0x7e, 0x00);
+	// writeRegister(0x60, 0xAD);
+	// writeRegister(0x7e, 0x03);
+	// writeRegister(0x3f, 0x00);
+	// writeRegister(0x7e, 0x05);
+	// writeRegister(0x40, 0xB3);
+	// writeRegister(0x42, 0xF1);
+	// writeRegister(0x44, 0x14);
+	// writeRegister(0x5a, 0x32);
+	// writeRegister(0x5e, 0x34);
+	// writeRegister(0x7a, 0x08);
+	// writeRegister(0x7e, 0x06);
+	// writeRegister(0x43, 0x1B);
+	// writeRegister(0x3f, 0xBF);
+	// writeRegister(0x4d, 0x3F);
+	// writeRegister(0x7e, 0x08);
+	// writeRegister(0x64, 0x20);
+	// writeRegister(0x69, 0x18);
+	// writeRegister(0x7e, 0x09);
+	// writeRegister(0x4e, 0xAF);
+	// writeRegister(0x5e, 0x40);
+	// writeRegister(0x47, 0x80);
+	// writeRegister(0x48, 0x80);
+	// writeRegister(0x56, 0x77);
+	// writeRegister(0x5f, 0x78);
+	// writeRegister(0x60, 0x78);
+	// writeRegister(0x61, 0x08);
+	// writeRegister(0x62, 0x50);
+	// writeRegister(0x7e, 0x0A);
+	// writeRegister(0x44, 0x60);
+	// writeRegister(0x7e, 0x00);
+	// writeRegister(0x4c, 0x11);
+	// writeRegister(0x54, 0x80);
+	// writeRegister(0x73, 0x1F);
+	// writeRegister(0x74, 0x1F);
+	// writeRegister(0x49, 0x78);
+	// writeRegister(0x4a, 0x78);
+	// writeRegister(0x43, 0x08);
+	// writeRegister(0x44, 0x50);
+	// writeRegister(0x63, 0xFF);
+	// writeRegister(0x64, 0x1F);
+	// writeRegister(0x7e, 0x14);
+	// writeRegister(0x64, 0x60);
+	// writeRegister(0x65, 0x08);
+	// writeRegister(0x62, 0x78);
+	// writeRegister(0x7e, 0x15);
+	// writeRegister(0x47, 0x58);
+	// writeRegister(0x7e, 0x07);
+	// writeRegister(0x40, 0x0D);
+	// writeRegister(0x42, 0x14);
+	// writeRegister(0x4a, 0x0E);
+	// writeRegister(0x44, 0x0F);
+	// writeRegister(0x43, 0x42);
+	// writeRegister(0x4b, 0x80);
+	// writeRegister(0x7e, 0x10);
+	// writeRegister(0x5a, 0x02);
+	// writeRegister(0x7e, 0x07);
+	// writeRegister(0x3f, 0x41);
+	// writeRegister(0x6f, 0x00);
+
+	// usleep(9999);
+
+	// writeRegister(0x31, 0x44);
+	// writeRegister(0x7e, 0x07);
+	// writeRegister(0x3f, 0x40);
+	// writeRegister(0x7e, 0x06);
+	// writeRegister(0x61, 0xf0);
+	// writeRegister(0x62, 0x00);
+	// writeRegister(0x7e, 0x0D);
+	// writeRegister(0x47, 0xC0);
+	// writeRegister(0x6e, 0xd5);
+	// writeRegister(0x7e, 0x00);
+	// writeRegister(0x5a, 0xa0);
+	// writeRegister(0x4d, 0xA8);
+	// writeRegister(0x59, 0x50);
+	// writeRegister(0x3f, 0x80);
+
+	// writeRegister(0x7e, 0x00);
+	// writeRegister(0x59, 0x10);
+	// writeRegister(0x53, 0x00);
 	uint8_t data[5] {};
 
 	// Power on reset
@@ -400,19 +495,16 @@ PMW3901::init()
 
 		_yaw_rotation = (enum Rotation)val;
 	}
-	//printf("First checkpoint\n");
+
 	/* For devices competing with NuttX SPI drivers on a bus (Crazyflie SD Card expansion board) */
 	SPI::set_lockmode(LOCK_THREADS);
-	//printf("Second checkpoint\n");
 
 	/* do SPI init (and probe) first */
 	if (SPI::init() != OK) {
 		goto out;
 	}
-	//printf("Third checkpoin\nt");
 
 	sensorInit();
-	//printf("Fourth checkpoint\n");
 
 	/* allocate basic report buffers */
 	_reports = new ringbuffer::RingBuffer(2, sizeof(optical_flow_s));
@@ -841,7 +933,7 @@ fail1:
 		delete g_dev;
 		g_dev = nullptr;
 	}
-    
+    printf()
 	errx(1, "driver start failed: null ptr");
     
 fail2:

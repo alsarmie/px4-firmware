@@ -32,10 +32,10 @@
  ****************************************************************************/
 
 /**
- * @file pmw3901.cpp
+ * @file 
  * @author Daniele Pettenuzzo
  *
- * Driver for the pmw3901 optical flow sensor connected via SPI.
+ * Driver for the cal flow sensor connected via SPI.
  */
 
 #include <px4_config.h>
@@ -79,39 +79,39 @@
 
 /* Configuration Constants */
 #ifdef PX4_SPI_BUS_EXPANSION
-#define PMW3901_BUS PX4_SPI_BUS_EXPANSION
+#define PX4_SPI_BUS_EXPANSION
 #else
-#define PMW3901_BUS 5
+#define 0
 #endif
 
 #ifdef PX4_SPIDEV_EXPANSION_2
-#define PMW3901_SPIDEV PX4_SPIDEV_EXPANSION_2
+#define EV PX4_SPIDEV_EXPANSION_2
 #else
-#define PMW3901_SPIDEV 1280
+#define EV 0
 #endif
 
-#define PMW3901_SPI_BUS_SPEED (2000000L) // 2MHz
+#define BUS_SPEED (2000000L) // 2MHz
 
 #define DIR_WRITE(a) ((a) | (1 << 7))
 #define DIR_READ(a) ((a) & 0x7f)
 
-#define PMW3901_DEVICE_PATH "/dev/pmw3901"
+#define CE_PATH "/dev/1"
 
-/* PMW3901 Registers addresses */
-#define PMW3901_US 1000 /*   1 ms */
-#define PMW3901_SAMPLE_RATE 10000 /*  10 ms */
+/* sters addresses */
+#define 000 /*   1 ms */
+#define LE_RATE 10000 /*  10 ms */
 
 
 #ifndef CONFIG_SCHED_WORKQUEUE
 # error This requires CONFIG_SCHED_WORKQUEUE.
 #endif
 
-class PMW3901 : public device::SPI
+class blic device::SPI
 {
 public:
-	PMW3901(int bus = PMW3901_BUS, enum Rotation yaw_rotation = (enum Rotation)0);
+	bus = 1_BUS,Rotation yaw_rotation = (enum Rotation)0);
 
-	virtual ~PMW3901();
+	virtual ~
 
 	virtual int init();
 
@@ -191,10 +191,10 @@ private:
 /*
  * Driver 'main' command.
  */
-extern "C" __EXPORT int pmw3901_main(int argc, char *argv[]);
+extern "C" __EXPORT int (int argc, char *argv[]);
 
-PMW3901::PMW3901(int bus, enum Rotation yaw_rotation) :
-	SPI("PMW3901", PMW3901_DEVICE_PATH, bus, PMW3901_SPIDEV, SPIDEV_MODE0, PMW3901_SPI_BUS_SPEED),
+nt num Rotation yaw_rotation) :
+	SPI("DEVIH, bus, 1_SPIDEV, SPODE0, 1_SPI_BUS_SPEED),
 	_reports(nullptr),
 	_sensor_ok(false),
 	_measure_ticks(0),
@@ -202,20 +202,20 @@ PMW3901::PMW3901(int bus, enum Rotation yaw_rotation) :
 	_orb_class_instance(-1),
 	_optical_flow_pub(nullptr),
 	_subsystem_pub(nullptr),
-	_sample_perf(perf_alloc(PC_ELAPSED, "pmw3901_read")),
-	_comms_errors(perf_alloc(PC_COUNT, "pmw3901_com_err")),
+	_sample_perf(perf_alloc(PC_ELAPSED, "")),
+	_comms_errors(perf_alloc(PC_COUNT, "err")),
 	_previous_collect_timestamp(0),
 	_yaw_rotation(yaw_rotation)
 {
 
 	// enable debug() calls
-	_debug_enabled = true;
+	_debug_enabled = false;
 
 	// work_cancel in the dtor will explode if we don't do this...
 	memset(&_work, 0, sizeof(_work));
 }
 
-PMW3901::~PMW3901()
+)
 {
 	/* make sure we are truly inactive */
 	stop();
@@ -232,9 +232,8 @@ PMW3901::~PMW3901()
 
 
 int
-PMW3901::sensorInit()
+sorInit()
 {
-
 	uint8_t data[5] {};
 
 	// Power on reset
@@ -251,7 +250,7 @@ PMW3901::sensorInit()
 	usleep(1000);
 
 	// set performance optimization registers
-	// from PixArt PMW3901MB Optical Motion Tracking chip demo kit V3.20 (21 Aug 2018)
+	// from PixArt tical Motion Tracking chip demo kit V3.20 (21 Aug 2018)
 	unsigned char v = 0;
 	unsigned char c1 = 0;
 	unsigned char c2 = 0;
@@ -365,7 +364,7 @@ PMW3901::sensorInit()
 	writeRegister(0x40, 0x41);
 	writeRegister(0x70, 0x00);
 
-	usleep(9999); // delay 10ms
+	px4_usleep(10000); // delay 10ms
 
 	writeRegister(0x32, 0x44);
 	writeRegister(0x7F, 0x07);
@@ -387,7 +386,7 @@ PMW3901::sensorInit()
 }
 
 int
-PMW3901::init()
+t()
 {
 	int ret = PX4_ERROR;
 
@@ -400,19 +399,16 @@ PMW3901::init()
 
 		_yaw_rotation = (enum Rotation)val;
 	}
-	//printf("First checkpoint\n");
+
 	/* For devices competing with NuttX SPI drivers on a bus (Crazyflie SD Card expansion board) */
 	SPI::set_lockmode(LOCK_THREADS);
-	//printf("Second checkpoint\n");
 
 	/* do SPI init (and probe) first */
 	if (SPI::init() != OK) {
 		goto out;
 	}
-	//printf("Third checkpoin\nt");
 
 	sensorInit();
-	//printf("Fourth checkpoint\n");
 
 	/* allocate basic report buffers */
 	_reports = new ringbuffer::RingBuffer(2, sizeof(optical_flow_s));
@@ -432,7 +428,7 @@ out:
 
 
 int
-PMW3901::probe()
+be()
 {
 	uint8_t data[2] = { 0, 0 };
 
@@ -449,7 +445,7 @@ PMW3901::probe()
 
 
 int
-PMW3901::ioctl(device::file_t *filp, int cmd, unsigned long arg)
+tl(device::file_t *filp, int cmd, unsigned long arg)
 {
 	switch (cmd) {
 
@@ -465,7 +461,7 @@ PMW3901::ioctl(device::file_t *filp, int cmd, unsigned long arg)
 					bool want_start = (_measure_ticks == 0);
 
 					/* set interval for next measurement to minimum legal value */
-					_measure_ticks = USEC2TICK(PMW3901_SAMPLE_RATE);
+					_measure_ticks = USEC2TICK(LE_RATE);
 
 					/* if we need to start the poll state machine, do it */
 					if (want_start) {
@@ -491,7 +487,7 @@ PMW3901::ioctl(device::file_t *filp, int cmd, unsigned long arg)
 					unsigned ticks = USEC2TICK(1000000 / arg);
 
 					/* check against maximum rate */
-					if (ticks < USEC2TICK(PMW3901_SAMPLE_RATE)) {
+					if (ticks < USEC2TICK(LE_RATE)) {
 						return -EINVAL;
 					}
 
@@ -515,7 +511,7 @@ PMW3901::ioctl(device::file_t *filp, int cmd, unsigned long arg)
 }
 
 ssize_t
-PMW3901::read(device::file_t *filp, char *buffer, size_t buflen)
+d(device::file_t *filp, char *buffer, size_t buflen)
 {
 	unsigned count = buflen / sizeof(struct optical_flow_s);
 	struct optical_flow_s *rbuf = reinterpret_cast<struct optical_flow_s *>(buffer);
@@ -567,7 +563,7 @@ PMW3901::read(device::file_t *filp, char *buffer, size_t buflen)
 
 
 int
-PMW3901::readRegister(unsigned reg, uint8_t *data, unsigned count)
+dRegister(unsigned reg, uint8_t *data, unsigned count)
 {
 	uint8_t cmd[5]; 					// read up to 4 bytes
 	int ret;
@@ -590,7 +586,7 @@ PMW3901::readRegister(unsigned reg, uint8_t *data, unsigned count)
 
 
 int
-PMW3901::writeRegister(unsigned reg, uint8_t data)
+teRegister(unsigned reg, uint8_t data)
 {
 	uint8_t cmd[2]; 						// write 1 byte
 	int ret;
@@ -612,7 +608,7 @@ PMW3901::writeRegister(unsigned reg, uint8_t data)
 
 
 int
-PMW3901::collect()
+lect()
 {
 	int ret = OK;
 	int16_t delta_x_raw, delta_y_raw;
@@ -694,7 +690,7 @@ PMW3901::collect()
 
 
 int
-PMW3901::readMotionCount(int16_t &deltaX, int16_t &deltaY)
+dMotionCount(int16_t &deltaX, int16_t &deltaY)
 {
 	int ret;
 
@@ -721,13 +717,13 @@ PMW3901::readMotionCount(int16_t &deltaX, int16_t &deltaY)
 
 
 void
-PMW3901::start()
+rt()
 {
 	/* reset the report ring and state machine */
 	_reports->flush();
 
 	/* schedule a cycle to start things */
-	work_queue(LPWORK, &_work, (worker_t)&PMW3901::cycle_trampoline, this, USEC2TICK(PMW3901_US));
+	work_queue(LPWORK, &_work, (worker_t)&le_trampoline, this, USEC2TICK(1_US))
 
 	/* notify about state change */
 	struct subsystem_info_s info = {};
@@ -747,35 +743,35 @@ PMW3901::start()
 }
 
 void
-PMW3901::stop()
+p()
 {
 	work_cancel(HPWORK, &_work);
 }
 
 void
-PMW3901::cycle_trampoline(void *arg)
+le_trampoline(void *arg)
 {
-	PMW3901 *dev = (PMW3901 *)arg;
+	 = (1 *)ar
 
 	dev->cycle();
 }
 
 void
-PMW3901::cycle()
+le()
 {
 	collect();
 
 	/* schedule a fresh cycle call when the measurement is done */
 	work_queue(LPWORK,
 		   &_work,
-		   (worker_t)&PMW3901::cycle_trampoline,
+		   (worker_t)&le_trampoline,
 		   this,
-		   USEC2TICK(PMW3901_SAMPLE_RATE));
+		   USEC2TICK(LE_RATE));
 
 }
 
 void
-PMW3901::print_info()
+nt_info()
 {
 	perf_print_counter(_sample_perf);
 	perf_print_counter(_comms_errors);
@@ -787,10 +783,10 @@ PMW3901::print_info()
 /**
  * Local functions in support of the shell command.
  */
-namespace pmw3901
+namespace 
 {
 
-PMW3901	*g_dev;
+ev;
 
 void	start(int spi_bus);
 void	stop();
@@ -813,56 +809,30 @@ start(int spi_bus)
 	}
 
 	/* create the driver */
-	g_dev = new PMW3901(spi_bus, (enum Rotation)0);
+	g_dev = new bus, (enum Rotation)0);
 
 	if (g_dev == nullptr) {
-		goto fail1;
+		goto fail;
 	}
 
 	if (OK != g_dev->init()) {
-		goto fail2;
+		goto fail;
 	}
 
 	/* set the poll rate to default, starts automatic data collection */
-	fd = open(PMW3901_DEVICE_PATH, O_RDONLY);
+	fd = open(CE_PATH, O_RDONLY);
 
 	if (fd < 0) {
-		goto fail3;
+		goto fail;
 	}
 
 	if (ioctl(fd, SENSORIOCSPOLLRATE, SENSOR_POLLRATE_DEFAULT) < 0) {
-		goto fail4;
+		goto fail;
 	}
 
 	exit(0);
-fail1:
 
-	if (g_dev != nullptr) {
-		delete g_dev;
-		g_dev = nullptr;
-	}
-    
-	errx(1, "driver start failed: null ptr");
-    
-fail2:
-
-	if (g_dev != nullptr) {
-		delete g_dev;
-		g_dev = nullptr;
-	}
-
-	errx(1, "driver start failed: gdev_init: g_dev");
-
-fail3:
-
-	if (g_dev != nullptr) {
-		delete g_dev;
-		g_dev = nullptr;
-	}
-
-	errx(1, "driver start failed:fd");
-
-fail4:
+fail:
 
 	if (g_dev != nullptr) {
 		delete g_dev;
@@ -901,10 +871,10 @@ test()
 	struct optical_flow_s report;
 	ssize_t sz;
 
-	int fd = open(PMW3901_DEVICE_PATH, O_RDONLY);
+	int fd = open(CE_PATH, O_RDONLY);
 
 	if (fd < 0) {
-		err(1, "%s open failed (try 'pmw3901 start' if the driver is not running)", PMW3901_DEVICE_PATH);
+		err(1, "%s open failed (try 't' if the driver is not running)", 1_DEVIH);
 	}
 
 	/* do a simple demand read */
@@ -942,18 +912,18 @@ info()
  */
 void usage()
 {
-	PX4_INFO("usage: pmw3901 {start|test|reset|info'}");
+	PX4_INFO("usage: rt|test|reset|info'}");
 	PX4_INFO("    [-b SPI_BUS]");
 }
 
-} // namespace pmw3901
+} // namespace 
 
 
 int
-pmw3901_main(int argc, char *argv[])
+(int argc, char *argv[])
 {
 	if (argc < 2) {
-		pmw3901::usage();
+		ge();
 		return PX4_ERROR;
 	}
 
@@ -963,7 +933,7 @@ pmw3901_main(int argc, char *argv[])
 	int ch;
 	int myoptind = 1;
 	const char *myoptarg = nullptr;
-	int spi_bus = PMW3901_BUS;
+	int spi_bus = 
 
 	while ((ch = px4_getopt(argc, argv, "b:", &myoptind, &myoptarg)) != EOF) {
 		switch (ch) {
@@ -979,7 +949,7 @@ pmw3901_main(int argc, char *argv[])
 	}
 
 	if (err_flag) {
-		pmw3901::usage();
+		ge();
 		return PX4_ERROR;
 	}
 
@@ -987,30 +957,30 @@ pmw3901_main(int argc, char *argv[])
 	 * Start/load the driver.
 	 */
 	if (!strcmp(argv[myoptind], "start")) {
-		pmw3901::start(spi_bus);
+		rt(spi_bus);
 	}
 
 	/*
 	 * Stop the driver
 	 */
 	if (!strcmp(argv[myoptind], "stop")) {
-		pmw3901::stop();
+		p();
 	}
 
 	/*
 	 * Test the driver/device.
 	 */
 	if (!strcmp(argv[myoptind], "test")) {
-		pmw3901::test();
+		t();
 	}
 
 	/*
 	 * Print driver information.
 	 */
 	if (!strcmp(argv[myoptind], "info") || !strcmp(argv[myoptind], "status")) {
-		pmw3901::info();
+		o();
 	}
 
-	pmw3901::usage();
+	ge();
 	return PX4_ERROR;
 }

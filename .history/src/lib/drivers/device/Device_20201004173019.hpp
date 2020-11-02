@@ -137,11 +137,9 @@ public:
 	 *
 	 * @return The bus ID
 	 */
-	
 	uint8_t get_device_bus() const { return _device_id.devid_s.bus; }
 
 	uint32_t get_device_id() const { return _device_id.devid; }
-	
 
 	/**
 	 * Return the bus type the device is connected to.
@@ -157,7 +155,6 @@ public:
 			return "I2C";
 
 		case DeviceBusType_SPI:
-			printf("SPI\n");
 			return "SPI";
 
 		case DeviceBusType_UAVCAN:
@@ -165,7 +162,6 @@ public:
 
 		case DeviceBusType_UNKNOWN:
 		default:
-			printf("UNKOWN\n");
 			return "UNKNOWN";
 		}
 	}

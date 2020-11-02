@@ -329,8 +329,7 @@ fi
 
 if ver hwcmp PX4FMU_V5
 then
-	# External Optical flow sensor
-	pmw3901 start
+
 	# Internal SPI bus ICM-20602
 	mpu6000 -R 8 -s -T 20602 start
 

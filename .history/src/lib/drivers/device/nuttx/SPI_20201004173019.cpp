@@ -94,13 +94,9 @@ SPI::init()
 
 	/* attach to the spi bus */
 	if (_dev == nullptr) {
-		int test = get_device_bus();
-		printf ("device_bus: %d \n", test);
-		
 		_dev = px4_spibus_initialize(get_device_bus());
 	}
 
-	
 	if (_dev == nullptr) {
 		DEVICE_DEBUG("failed to init SPI");
 		ret = -ENOENT;

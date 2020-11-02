@@ -400,19 +400,19 @@ PMW3901::init()
 
 		_yaw_rotation = (enum Rotation)val;
 	}
-	//printf("First checkpoint\n");
+	printf("First checkpoint\n");
 	/* For devices competing with NuttX SPI drivers on a bus (Crazyflie SD Card expansion board) */
 	SPI::set_lockmode(LOCK_THREADS);
-	//printf("Second checkpoint\n");
+	printf("Second checkpoint\n");
 
 	/* do SPI init (and probe) first */
 	if (SPI::init() != OK) {
 		goto out;
 	}
-	//printf("Third checkpoin\nt");
+	printf("Third checkpoin\nt");
 
 	sensorInit();
-	//printf("Fourth checkpoint\n");
+	printf("Fourth checkpoint\n");
 
 	/* allocate basic report buffers */
 	_reports = new ringbuffer::RingBuffer(2, sizeof(optical_flow_s));

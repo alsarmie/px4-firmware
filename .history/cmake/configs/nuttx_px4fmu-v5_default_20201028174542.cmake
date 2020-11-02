@@ -27,7 +27,7 @@ set(config_module_list
 	drivers/oreoled
 	drivers/pwm_input
 	drivers/pwm_out_sim
-	drivers/pmw3901
+	# drivers/pmw3901
 	drivers/px4flow
 	drivers/px4fmu
 	drivers/px4io

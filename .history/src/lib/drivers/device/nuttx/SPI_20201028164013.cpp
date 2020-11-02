@@ -44,7 +44,8 @@
  * the two, where an interrupt-mode client will ignore the lock held by the
  * non-interrupt-mode client.
  */
-
+#include <iostream>   // std::cout
+#include <string>     // std::string, std::to_string
 #include "SPI.hpp"
 
 #include <px4_config.h>
@@ -95,17 +96,17 @@ SPI::init()
 	/* attach to the spi bus */
 	if (_dev == nullptr) {
 		int test = get_device_bus();
-		printf ("device_bus: %d \n", test);
-		
+		printf(to_string(test));
 		_dev = px4_spibus_initialize(get_device_bus());
 	}
 
-	
+	printf("We are here!\n");
 	if (_dev == nullptr) {
 		DEVICE_DEBUG("failed to init SPI");
 		ret = -ENOENT;
 		goto out;
 	}
+	printf("And we did not failed to init SPI...\n");
 
 	/* deselect device to ensure high to low transition of pin select */
 	SPI_SELECT(_dev, _device, false);
@@ -130,6 +131,7 @@ SPI::init()
 	DEVICE_LOG("on SPI bus %d at %d (%u KHz)", get_device_bus(), PX4_SPI_DEV_ID(_device), _frequency / 1000);
 
 out:
+	printf("Failed to init SPI :()...\n");
 	return ret;
 }
 

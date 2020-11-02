@@ -81,13 +81,13 @@
 #ifdef PX4_SPI_BUS_EXPANSION
 #define PMW3901_BUS PX4_SPI_BUS_EXPANSION
 #else
-#define PMW3901_BUS 5
+#define PMW3901_BUS 0
 #endif
 
 #ifdef PX4_SPIDEV_EXPANSION_2
 #define PMW3901_SPIDEV PX4_SPIDEV_EXPANSION_2
 #else
-#define PMW3901_SPIDEV 1280
+#define PMW3901_SPIDEV 0
 #endif
 
 #define PMW3901_SPI_BUS_SPEED (2000000L) // 2MHz
@@ -209,7 +209,7 @@ PMW3901::PMW3901(int bus, enum Rotation yaw_rotation) :
 {
 
 	// enable debug() calls
-	_debug_enabled = true;
+	_debug_enabled = false;
 
 	// work_cancel in the dtor will explode if we don't do this...
 	memset(&_work, 0, sizeof(_work));
@@ -234,8 +234,7 @@ PMW3901::~PMW3901()
 int
 PMW3901::sensorInit()
 {
-
-	uint8_t data[5] {};
+	uint8_t data[5];
 
 	// Power on reset
 	writeRegister(0x3A, 0x5A);
@@ -251,60 +250,6 @@ PMW3901::sensorInit()
 	usleep(1000);
 
 	// set performance optimization registers
-	// from PixArt PMW3901MB Optical Motion Tracking chip demo kit V3.20 (21 Aug 2018)
-	unsigned char v = 0;
-	unsigned char c1 = 0;
-	unsigned char c2 = 0;
-
-	writeRegister(0x7F, 0x00);
-	writeRegister(0x55, 0x01);
-	writeRegister(0x50, 0x07);
-	writeRegister(0x7f, 0x0e);
-	writeRegister(0x43, 0x10);
-
-	readRegister(0x67, &v, 1);
-
-	// if bit7 is set
-	if (v & (1 << 7)) {
-		writeRegister(0x48, 0x04);
-
-	} else {
-		writeRegister(0x48, 0x02);
-	}
-
-	writeRegister(0x7F, 0x00);
-	writeRegister(0x51, 0x7b);
-	writeRegister(0x50, 0x00);
-	writeRegister(0x55, 0x00);
-
-	writeRegister(0x7F, 0x0e);
-	readRegister(0x73, &v, 1);
-
-	if (v == 0) {
-		readRegister(0x70, &c1, 1);
-
-		if (c1 <= 28) {
-			c1 = c1 + 14;
-
-		} else {
-			c1 = c1 + 11;
-		}
-
-		if (c1 > 0x3F) {
-			c1 = 0x3F;
-		}
-
-		readRegister(0x71, &c2, 1);
-		c2 = ((unsigned short)c2 * 45) / 100;
-
-		writeRegister(0x7f, 0x00);
-		writeRegister(0x61, 0xAD);
-		writeRegister(0x51, 0x70);
-		writeRegister(0x7f, 0x0e);
-		writeRegister(0x70, c1);
-		writeRegister(0x71, c2);
-	}
-
 	writeRegister(0x7F, 0x00);
 	writeRegister(0x61, 0xAD);
 	writeRegister(0x7F, 0x03);
@@ -338,7 +283,7 @@ PMW3901::sensorInit()
 	writeRegister(0x7F, 0x00);
 	writeRegister(0x4D, 0x11);
 	writeRegister(0x55, 0x80);
-	writeRegister(0x74, 0x21);
+	writeRegister(0x74, 0x1F);
 	writeRegister(0x75, 0x1F);
 	writeRegister(0x4A, 0x78);
 	writeRegister(0x4B, 0x78);
@@ -347,11 +292,11 @@ PMW3901::sensorInit()
 	writeRegister(0x64, 0xFF);
 	writeRegister(0x65, 0x1F);
 	writeRegister(0x7F, 0x14);
-	writeRegister(0x65, 0x67);
+	writeRegister(0x65, 0x60);
 	writeRegister(0x66, 0x08);
-	writeRegister(0x63, 0x70);
+	writeRegister(0x63, 0x78);
 	writeRegister(0x7F, 0x15);
-	writeRegister(0x48, 0x48);
+	writeRegister(0x48, 0x58);
 	writeRegister(0x7F, 0x07);
 	writeRegister(0x41, 0x0D);
 	writeRegister(0x43, 0x14);
@@ -365,22 +310,26 @@ PMW3901::sensorInit()
 	writeRegister(0x40, 0x41);
 	writeRegister(0x70, 0x00);
 
-	usleep(9999); // delay 10ms
+	usleep(10000);
 
 	writeRegister(0x32, 0x44);
 	writeRegister(0x7F, 0x07);
 	writeRegister(0x40, 0x40);
 	writeRegister(0x7F, 0x06);
-	writeRegister(0x62, 0xF0);
+	writeRegister(0x62, 0xf0);
 	writeRegister(0x63, 0x00);
 	writeRegister(0x7F, 0x0D);
 	writeRegister(0x48, 0xC0);
-	writeRegister(0x6F, 0xD5);
+	writeRegister(0x6F, 0xd5);
 	writeRegister(0x7F, 0x00);
-	writeRegister(0x5B, 0xA0);
+	writeRegister(0x5B, 0xa0);
 	writeRegister(0x4E, 0xA8);
 	writeRegister(0x5A, 0x50);
 	writeRegister(0x40, 0x80);
+
+	writeRegister(0x7F, 0x00);
+	writeRegister(0x5A, 0x10);
+	writeRegister(0x54, 0x00);
 
 	return OK;
 
@@ -400,19 +349,16 @@ PMW3901::init()
 
 		_yaw_rotation = (enum Rotation)val;
 	}
-	//printf("First checkpoint\n");
+
 	/* For devices competing with NuttX SPI drivers on a bus (Crazyflie SD Card expansion board) */
 	SPI::set_lockmode(LOCK_THREADS);
-	//printf("Second checkpoint\n");
 
 	/* do SPI init (and probe) first */
 	if (SPI::init() != OK) {
 		goto out;
 	}
-	//printf("Third checkpoin\nt");
 
 	sensorInit();
-	//printf("Fourth checkpoint\n");
 
 	/* allocate basic report buffers */
 	_reports = new ringbuffer::RingBuffer(2, sizeof(optical_flow_s));
@@ -816,53 +762,27 @@ start(int spi_bus)
 	g_dev = new PMW3901(spi_bus, (enum Rotation)0);
 
 	if (g_dev == nullptr) {
-		goto fail1;
+		goto fail;
 	}
 
 	if (OK != g_dev->init()) {
-		goto fail2;
+		goto fail;
 	}
 
 	/* set the poll rate to default, starts automatic data collection */
 	fd = open(PMW3901_DEVICE_PATH, O_RDONLY);
 
 	if (fd < 0) {
-		goto fail3;
+		goto fail;
 	}
 
 	if (ioctl(fd, SENSORIOCSPOLLRATE, SENSOR_POLLRATE_DEFAULT) < 0) {
-		goto fail4;
+		goto fail;
 	}
 
 	exit(0);
-fail1:
 
-	if (g_dev != nullptr) {
-		delete g_dev;
-		g_dev = nullptr;
-	}
-    
-	errx(1, "driver start failed: null ptr");
-    
-fail2:
-
-	if (g_dev != nullptr) {
-		delete g_dev;
-		g_dev = nullptr;
-	}
-
-	errx(1, "driver start failed: gdev_init: g_dev");
-
-fail3:
-
-	if (g_dev != nullptr) {
-		delete g_dev;
-		g_dev = nullptr;
-	}
-
-	errx(1, "driver start failed:fd");
-
-fail4:
+fail:
 
 	if (g_dev != nullptr) {
 		delete g_dev;

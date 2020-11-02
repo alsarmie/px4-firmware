@@ -195,15 +195,15 @@ __EXPORT int stm32_spi_bus_initialize(void)
 	/* Get the SPI port for the PX4_SPI_EXTERNAL1 */
 
 	spi_ext = stm32_spibus_initialize(PX4_SPI_BUS_EXTERNAL1);
-	printf("SPI external init: %u\n",spi_ext);
+
 	if (!spi_ext) {
 		PX4_ERR("[boot] FAILED to initialize SPI port %d\n", PX4_SPI_BUS_EXTERNAL1);
 		return -ENODEV;
 	}
 
-	SPI_SETFREQUENCY(spi_ext, 8 * 1000 * 1000); //2000000);
+	SPI_SETFREQUENCY(spi_ext, 8 * 1000 * 1000);
 	SPI_SETBITS(spi_ext, 8);
-	SPI_SETMODE(spi_ext, SPIDEV_MODE3); //3
+	SPI_SETMODE(spi_ext, SPIDEV_MODE3);
 
 	for (int cs = PX4_EXTERNAL1_BUS_FIRST_CS; cs <= PX4_EXTERNAL1_BUS_LAST_CS; cs++) {
 		SPI_SELECT(spi_ext, cs, false);

@@ -137,11 +137,9 @@ public:
 	 *
 	 * @return The bus ID
 	 */
-	
 	uint8_t get_device_bus() const { return _device_id.devid_s.bus; }
 
 	uint32_t get_device_id() const { return _device_id.devid; }
-	
 
 	/**
 	 * Return the bus type the device is connected to.
