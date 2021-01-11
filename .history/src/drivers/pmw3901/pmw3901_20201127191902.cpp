@@ -147,8 +147,7 @@ private:
 	int _flow_sum_x = 0;
 	int _flow_sum_y = 0;
 	uint64_t _flow_dt_sum_usec = 0;
-	uint16_t _flow_quality_sum{0};
-	uint8_t _flow_sample_counter{0};
+
 
 	/**
 	* Initialise the automatic measurement state machine and start it.
@@ -615,7 +614,6 @@ PMW3901::writeRegister(unsigned reg, uint8_t data)
 int
 PMW3901::collect()
 {
-	perf_begin(_sample_perf);
 	int ret = OK;
 	int16_t delta_x_raw = 0;
 	int16_t delta_y_raw = 0;
@@ -623,6 +621,7 @@ PMW3901::collect()
 	float delta_x = 0.0f;
 	float delta_y = 0.0f;
 
+	perf_begin(_sample_perf);
 
 	uint64_t timestamp = hrt_absolute_time();
 	uint64_t dt_flow = timestamp - _previous_collect_timestamp;
@@ -630,23 +629,18 @@ PMW3901::collect()
 
 	_flow_dt_sum_usec += dt_flow;
 
-	readMotionCount(delta_x_raw, delta_y_raw,qual);
+	readMotionCount(delta_x_raw, delta_y_raw);
 
-	if (qual > 0) {
-		_flow_sum_x += delta_x_raw;
-		_flow_sum_y += delta_y_raw;
-		_flow_sample_counter ++;
-		_flow_quality_sum += qual;
-	}
-
+	_flow_sum_x += delta_x_raw;
+	_flow_sum_y += delta_y_raw;
 
 	if (_flow_dt_sum_usec < 45000) {
 
 		return ret;
 	}
 
-	delta_x = (float)_flow_sum_x / 385.0f;		// proportional factor + convert from pixels to radians
-	delta_y = (float)_flow_sum_y / 385.0f;		// proportional factor + convert from pixels to radians
+	delta_x = (float)_flow_sum_x / 500.0f;		// proportional factor + convert from pixels to radians
+	delta_y = (float)_flow_sum_y / 500.0f;		// proportional factor + convert from pixels to radians
 
 	struct optical_flow_s report;
 
@@ -660,11 +654,11 @@ PMW3901::collect()
 	rotate_3f(_yaw_rotation, report.pixel_flow_x_integral, report.pixel_flow_y_integral, zeroval);
 	rotate_3f(_yaw_rotation, report.gyro_x_rate_integral, report.gyro_y_rate_integral, report.gyro_z_rate_integral);
 
-	report.frame_count_since_last_readout = _flow_sample_counter;				//microseconds
+	report.frame_count_since_last_readout = 4;				//microseconds
 	report.integration_timespan = _flow_dt_sum_usec; 		//microseconds
 
 	report.sensor_id = 0;
-	report.quality = _flow_sample_counter > 0 ? _flow_quality_sum / _flow_sample_counter : 0;//255;
+	report.quality = 255;
 
 	/* No gyro on this board */
 	report.gyro_x_rate_integral = NAN;
@@ -674,8 +668,8 @@ PMW3901::collect()
 	// set (conservative) specs according to datasheet
 	report.max_flow_rate = 5.0f;       // Datasheet: 7.4 rad/s
 	report.min_ground_distance = 0.1f; // Datasheet: 80mm
-	report.max_ground_distance = 30.0f; // Datasheet: infinity
-	
+	report.max_ground_distance = 5.0f; // Datasheet: infinity
+
 	_flow_dt_sum_usec = 0;
 	_flow_sum_x = 0;
 	_flow_sum_y = 0;

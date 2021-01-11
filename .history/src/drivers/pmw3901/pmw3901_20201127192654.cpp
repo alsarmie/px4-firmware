@@ -645,8 +645,8 @@ PMW3901::collect()
 		return ret;
 	}
 
-	delta_x = (float)_flow_sum_x / 385.0f;		// proportional factor + convert from pixels to radians
-	delta_y = (float)_flow_sum_y / 385.0f;		// proportional factor + convert from pixels to radians
+	delta_x = (float)_flow_sum_x / 500.0f;		// proportional factor + convert from pixels to radians
+	delta_y = (float)_flow_sum_y / 500.0f;		// proportional factor + convert from pixels to radians
 
 	struct optical_flow_s report;
 
@@ -660,11 +660,11 @@ PMW3901::collect()
 	rotate_3f(_yaw_rotation, report.pixel_flow_x_integral, report.pixel_flow_y_integral, zeroval);
 	rotate_3f(_yaw_rotation, report.gyro_x_rate_integral, report.gyro_y_rate_integral, report.gyro_z_rate_integral);
 
-	report.frame_count_since_last_readout = _flow_sample_counter;				//microseconds
+	report.frame_count_since_last_readout = 4;				//microseconds
 	report.integration_timespan = _flow_dt_sum_usec; 		//microseconds
 
 	report.sensor_id = 0;
-	report.quality = _flow_sample_counter > 0 ? _flow_quality_sum / _flow_sample_counter : 0;//255;
+	report.quality = 255;
 
 	/* No gyro on this board */
 	report.gyro_x_rate_integral = NAN;
@@ -674,8 +674,8 @@ PMW3901::collect()
 	// set (conservative) specs according to datasheet
 	report.max_flow_rate = 5.0f;       // Datasheet: 7.4 rad/s
 	report.min_ground_distance = 0.1f; // Datasheet: 80mm
-	report.max_ground_distance = 30.0f; // Datasheet: infinity
-	
+	report.max_ground_distance = 5.0f; // Datasheet: infinity
+
 	_flow_dt_sum_usec = 0;
 	_flow_sum_x = 0;
 	_flow_sum_y = 0;

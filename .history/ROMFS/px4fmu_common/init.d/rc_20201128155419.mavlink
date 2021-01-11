@@ -64,7 +64,7 @@ then
 	if ver hwcmp PX4FMU_V5
 	then
 		mavlink start -r 2000 -b 57600 -d /dev/ttyS3
-		# mavlink start -r 20000 -b 921600 -d /dev/ttyS1
+		mavlink start -r 20000 -b 921600 -d /dev/ttyS2
 	fi
 
 	if ver hwcmp CRAZYFLIE OMNIBUS_F4SD

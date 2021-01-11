@@ -353,9 +353,6 @@ then
 
 	# Possible internal compass
 	ist8310 -C -b 5 start
-
-	# Teraranger mini 3m external range sensor.
-	teraranger start -a
 fi
 
 ###############################################################################

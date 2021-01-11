@@ -533,22 +533,7 @@ else
 	then
 		px4flow start &
 	fi
-	if ver hwcmp PX4FMU_V5
-	then
-		mavlink stream -r 500 -s ALTITUDE -d /dev/ttyS1
-		mavlink stream -r 500 -s ESTIMATOR_STATUS -d /dev/ttyS1
-		mavlink stream -r 500 -s HIGHRES_IMU -d /dev/ttyS1
-		mavlink stream -r 500 -s POSITION_TARGET_LOCAL_NED -d /dev/ttyS1
-		mavlink stream -r 500 -s LOCAL_POSITION_NED -d /dev/ttyS1
-		mavlink stream -r 500 -s GLOBAL_POSITION_INT -d /dev/ttyS1
-		mavlink stream -r 500 -s ATTITUDE -d /dev/ttyS1
-		mavlink stream -r 500 -s ATTITUDE_QUATERNION -d /dev/ttyS1
-		mavlink stream -r 500 -s ATTITUDE_TARGET -d /dev/ttyS1
-		mavlink stream -r 500 -s SERVO_OUTPUT_RAW_0 -d /dev/ttyS1
-		mavlink stream -r 500 -s RC_CHANNELS -d /dev/ttyS1
-		mavlink stream -r 500 -s OPTICAL_FLOW_RAD -d /dev/ttyS1
-		mavlink stream -r 500 -s DISTANCE_SENSOR -d /dev/ttyS1
-	fi
+
 	#
 	# Start any custom addons.
 	#

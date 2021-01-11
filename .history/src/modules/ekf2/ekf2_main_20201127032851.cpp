@@ -1086,6 +1086,7 @@ void Ekf2::run()
 		bool optical_flow_updated = false;
 
 		orb_check(_optical_flow_sub, &optical_flow_updated);
+		printf("Optical flow updated %d\n",optical_flow_updated);
 		if (optical_flow_updated) {
 			optical_flow_s optical_flow;
 
